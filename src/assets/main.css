@@ -2,7 +2,7 @@
 @import 'bootstrap/dist/css/bootstrap.min.css';
 
 /* Custom styles can go here */
-#app {
+/* #app {
   margin: 0 auto;
   font-weight: normal;
 }
@@ -26,4 +26,4 @@ a,
     display: grid;
     grid-template-columns: 1fr 1fr;
   }
-}
+} */
