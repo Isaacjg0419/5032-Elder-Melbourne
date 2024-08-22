@@ -1,4 +1,5 @@
 <template>
+    <div></div>
     <div class="register-container">
         <h2>Register</h2>
         <form @submit.prevent="handleRegister">
@@ -29,13 +30,12 @@
                 <p v-if="confirmPasswordError" class="error">{{ confirmPasswordError }}</p>
             </div>
 
-            <div class="form-group">
-                <label for="role">Select Role</label>
-                <select v-model="role" required>
-                    <option value="user">User</option>
-                    <option value="admin">Admin</option>
-                </select>
-            </div>
+            <label for="role">Select Role</label>
+            <select class="form-select form-select-sm" v-model="role" required
+                style="margin-top: 1rem;margin-bottom: 1rem;">
+                <option value="user">User</option>
+                <option value="admin">Admin</option>
+            </select>
 
             <button type="submit">Register</button>
         </form>
@@ -43,6 +43,9 @@
 </template>
 
 <script>
+import { db } from '../data/firebase.js';
+import { collection, addDoc } from 'firebase/firestore';
+
 export default {
     data() {
         return {
@@ -83,7 +86,6 @@ export default {
         togglePasswordVisibility() {
             this.showPassword = !this.showPassword;
         },
-        // TODO integrate firebase for CRUD user data 
         async handleRegister() {
             if (!this.validatePassword(this.password)) {
                 this.passwordError = "Password must be at least 8 characters long and include one uppercase letter, one lowercase letter, one number, and one special character.";
@@ -94,28 +96,22 @@ export default {
                 this.confirmPasswordError = "Passwords do not match.";
                 return;
             }
-            // refresh all the previous errors
-            this.passwordError = ""; 
-            this.confirmPasswordError = ""; 
+            // Clear previous errors
+            this.passwordError = "";
+            this.confirmPasswordError = "";
 
-            const response = await fetch('http://localhost:3000/register', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
+            try {
+                // Save user data to Firestore
+                await addDoc(collection(db, "users"), {
                     email: this.email,
-                    password: this.password,
+                    password: this.password,  // Consider hashing the password before storing it
                     role: this.role,
-                }),
-            });
-
-            const result = await response.json();
-            if (response.ok) {
+                });
                 alert("Registration successful!");
                 this.$router.push('/login');
-            } else {
-                alert(result.message || "Registration failed.");
+            } catch (error) {
+                console.error("Error adding document: ", error);
+                alert("Registration failed.");
             }
         },
     },
