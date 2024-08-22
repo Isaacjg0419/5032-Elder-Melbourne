@@ -1,0 +1,35 @@
+{
+    "accounts": [
+      {
+        "id": 1,
+        "email": "admin1@example.com",
+        "password": "adminpassword1",
+        "role": "admin"
+      },
+      {
+        "id": 2,
+        "email": "admin2@example.com",
+        "password": "adminpassword2",
+        "role": "admin"
+      },
+      {
+        "id": 3,
+        "email": "user1@example.com",
+        "password": "userpassword1",
+        "role": "user"
+      },
+      {
+        "id": 4,
+        "email": "user2@example.com",
+        "password": "userpassword2",
+        "role": "user"
+      },
+      {
+        "id": 5,
+        "email": "user3@example.com",
+        "password": "userpassword3",
+        "role": "user"
+      }
+    ]
+  }
+  
