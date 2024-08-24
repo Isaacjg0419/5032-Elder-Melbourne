@@ -1,5 +1,4 @@
 <template>
-    <div></div>
     <div class="register-container">
         <h2>Register</h2>
         <form @submit.prevent="handleRegister">
@@ -32,7 +31,7 @@
 
             <label for="role">Select Role</label>
             <select class="form-select form-select-sm" v-model="role" required
-                style="margin-top: 1rem;margin-bottom: 1rem;">
+                style="margin-top: 1rem; margin-bottom: 1rem;">
                 <option value="user">User</option>
                 <option value="admin">Admin</option>
             </select>
@@ -43,8 +42,9 @@
 </template>
 
 <script>
-import { db } from '../data/firebase.js';
+import { db, auth } from '../data/firebase.js';
 import { collection, addDoc } from 'firebase/firestore';
+import { createUserWithEmailAndPassword } from 'firebase/auth';
 
 export default {
     data() {
@@ -57,19 +57,6 @@ export default {
             confirmPasswordError: "",
             showPassword: false,
         };
-    },
-    watch: {
-        password(newPassword) {
-            if (!this.validatePassword(newPassword)) {
-                this.passwordError = "Password must be at least 8 characters long and include one uppercase letter, one lowercase letter, one number, and one special character.";
-            } else {
-                this.passwordError = "";
-            }
-            this.validateConfirmPassword();
-        },
-        confirmPassword(newConfirmPassword) {
-            this.validateConfirmPassword();
-        },
     },
     methods: {
         validatePassword(password) {
@@ -96,24 +83,36 @@ export default {
                 this.confirmPasswordError = "Passwords do not match.";
                 return;
             }
+
             // Clear previous errors
             this.passwordError = "";
             this.confirmPasswordError = "";
 
             try {
+                const userCredential = await createUserWithEmailAndPassword(auth, this.email, this.password);
+                const user = userCredential.user;
+
                 // Save user data to Firestore
-                await addDoc(collection(db, "users"), {
+                const collectionName = this.role === "admin" ? "admins" : "users";
+                await addDoc(collection(db, collectionName), {
                     email: this.email,
-                    password: this.password,  // Consider hashing the password before storing it
                     role: this.role,
+                    uid: user.uid
                 });
+
                 alert("Registration successful!");
                 this.$router.push('/login');
             } catch (error) {
-                console.error("Error adding document: ", error);
-                alert("Registration failed.");
+                console.error("Error during registration: ", error);
+
+                if (error.code === 'auth/email-already-in-use') {
+                    alert("This email is already in use. Please use another email.");
+                } else {
+                    alert("Registration failed. Please try again.");
+                }
             }
-        },
+        }
+
     },
 };
 </script>
