@@ -36,45 +36,81 @@
 </template>
 
 <script>
-// TODO:change the accounts.json as the firebase 
-import accounts from '../data/accounts.json'; 
+// Import Firebase functions
+import { getFirestore, collection, addDoc, query, where, getDocs } from "firebase/firestore";
+import { getAuth, signInWithEmailAndPassword } from "firebase/auth";
+
+// Import local JSON data
+import accounts from '../data/accounts.json';
 
 export default {
     data() {
         return {
             email: "",
             password: "",
-            // Default role as user
-            role: "user", 
-            // Flag to show submitted data
-            submitted: false, 
+            role: "user", // Default role
+            submitted: false,
         };
     },
     methods: {
-        handleLogin() {
+        async handleLogin() {
             this.submitted = true;
-            const account = accounts.accounts.find(acc =>
-                acc.email === this.email &&
-                acc.password === this.password &&
-                acc.role === this.role
-            );
+            try {
+                // Firebase Authentication sign-in
+                const auth = getAuth();
+                const userCredential = await signInWithEmailAndPassword(auth, this.email, this.password);
 
-            if (account) {
-                //if Successful login
-                alert("Login successful!");
-                // Simulate navigation based on role
-                if (this.role === "admin") {
-                    this.$router.push('/admin-dashboard'); 
-                    // TODO:define the admin-dashboard
+                // Check role in Firestore
+                const db = getFirestore();
+                const roleQuery = query(
+                    collection(db, this.role === 'admin' ? 'admins' : 'users'),
+                    where('email', '==', this.email)
+                );
+
+                const querySnapshot = await getDocs(roleQuery);
+
+                if (!querySnapshot.empty) {
+                    // Successful login
+                    alert("Login successful!");
+
+                    // Navigate based on role
+                    if (this.role === "admin") {
+                        this.$router.push('/admin-dashboard');
+                    } else {
+                        this.$router.push('/user-home');
+                    }
                 } else {
-                    this.$router.push('/user-home'); 
-                    // TODO:define the user-home
+                    alert("Role mismatch or account not found in the specified collection.");
                 }
-            } else {
-                // Failed login
-                alert("Invalid account information. Please check your credentials or register.");
+            } catch (error) {
+                alert("Login failed: " + error.message);
             }
         },
+
+        async uploadAccountsToFirebase() {
+            const db = getFirestore();
+
+            try {
+                // Write accounts to Firebase (admins and users)
+                accounts.accounts.forEach(async account => {
+                    const collectionName = account.role === 'admin' ? 'admins' : 'users';
+                    await addDoc(collection(db, collectionName), {
+                        email: account.email,
+                        password: account.password, 
+                        role: account.role
+                    });
+                });
+                alert("Accounts successfully uploaded to Firebase!");
+            } catch (error) {
+                console.error("Error uploading accounts: ", error);
+            }
+        },
+    },
+
+    // mounted (Lifecycle hook) to initialize Firebase accounts
+    async mounted() {
+        // Uncomment to upload accounts to Firebase only once
+        // await this.uploadAccountsToFirebase();
     },
 };
 </script>
