@@ -17,7 +17,6 @@
                 </div>
             </div>
         </div>
-
         <div class="faqs-section">
             <h2>Common FAQs</h2>
             <div class="faqs-container">
@@ -31,7 +30,8 @@
                         <div class="row" style="margin-right: 2rem;">
                             <div class="col-12">
                                 <div class="d-flex align-items-center mb-2 mb-md-0">
-                                    <span>Average Rating: {{ faqRatings[index]?.avgRating.toFixed(1) || 'N/A' }}</span>
+                                    <span>Average Rating: {{ Number(faqRatings[index]?.avgRating).toFixed(1) || 'N/A'
+                                        }}</span>
                                 </div>
                             </div>
                         </div>
@@ -42,14 +42,15 @@
                             <div class="col-12 col-md-4">
                                 <div class="rating-buttons d-flex">
                                     <button v-for="rating in [1, 2, 3, 4, 5]" :key="rating"
-                                        :class="{ 'btn-primary': userRating[index] === rating }"
-                                        class="btn btn-outline-secondary mx-1" @click="rateFaq(index, rating)">
+                                        :class="{ 'btn-primary': userRating[index] === rating, 'btn-outline-secondary': userRating[index] !== rating }"
+                                        class="btn mx-1" @click="rateFaq(index, rating)"
+                                        :disabled="showThankYou[index] && userRating[index] !== rating">
                                         {{ rating }}
                                     </button>
                                 </div>
                             </div>
-                            <div class="col-12 col-md-4 text-center text-md-start">
-                                <div v-if="showThankYou[index]" class="thank-you-message">
+                            <div class="col-12 col-md-4 text-start text-md-end" v-if="showThankYou[index]">
+                                <div class="thank-you-message">
                                     Thank you for your rating!
                                 </div>
                             </div>
@@ -65,64 +66,116 @@
 import Navbar from '../components/NavBar.vue';
 import { ref, onMounted } from 'vue';
 import { db } from '@/data/firebase';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { doc, getDoc, getDocs, collection, updateDoc } from 'firebase/firestore';
 import supportsImage from '@/assets/services-supports.jpg';
-import faqsData from '@/data/common-faqs.json';
+// import faqsData from '@/data/common-faqs.json';
 
-const faqList = ref(faqsData);
-const expandedFaqs = ref(faqList.value.map(() => false));
+const faqList = ref([]);
+const expandedFaqs = ref([]);
 const faqRatings = ref([]);
-const userRating = ref(faqList.value.map(() => null));
-const showThankYou = ref(faqList.value.map(() => false));
+const userRating = ref([]);
+const showThankYou = ref([]);
+
 
 const toggleFaq = (index) => {
     expandedFaqs.value[index] = !expandedFaqs.value[index];
 };
 
 const fetchFaqRatings = async () => {
-    for (let i = 0; i < faqList.value.length; i++) {
-        const docRef = doc(db, 'faqRatings', `faq-${i}`);
-        const docSnap = await getDoc(docRef);
+    try {
+        const faqsSnapshot = await getDocs(collection(db, 'faqs'));
+        const idMap = new Map();
 
-        if (docSnap.exists()) {
-            faqRatings.value[i] = docSnap.data();
-        } else {
-            faqRatings.value[i] = { avgRating: 0, totalRatings: 0, ratingCount: 0 };
-        }
+        // Extract data and map it
+        faqsSnapshot.forEach((doc) => {
+            const faqData = doc.data();
+            const docId = doc.id;
+            idMap.set(docId, {
+                avgRating: faqData.avgRating || 0,
+                totalRatings: faqData.totalRatings || 0,
+                ratingCount: faqData.ratingCount || 0
+            });
+
+            // Populate FAQ list with Firestore data
+            faqList.value.push({
+                id: docId,
+                question: faqData.question || '',
+                answer: faqData.answer || '',
+                ratingData: {
+                    avgRating: faqData.avgRating || 0,
+                    totalRatings: faqData.totalRatings || 0,
+                    ratingCount: faqData.ratingCount || 0
+                }
+            });
+        });
+
+        // Initialize expandedFaqs, faqRatings, userRating, and showThankYou based on the new faqList
+        expandedFaqs.value = faqList.value.map(() => false);
+        faqRatings.value = faqList.value.map(faq => faq.ratingData);
+        userRating.value = faqList.value.map(() => null);
+        showThankYou.value = faqList.value.map(() => false);
+
+    } catch (error) {
+        console.error('Error fetching FAQ ratings:', error);
     }
 };
+
 
 const rateFaq = async (index, rating) => {
-    const docRef = doc(db, 'faqRatings', `faq-${index}`);
-    const docSnap = await getDoc(docRef);
+    try {
+        const faq = faqList.value[index];
 
-    let currentData = { avgRating: 0, totalRatings: 0, ratingCount: 0 };
+        if (!faq || !faq.id) {
+            throw new Error('FAQ data not found');
+        }
 
-    if (docSnap.exists()) {
-        currentData = docSnap.data();
+        const docRef = doc(db, 'faqs', faq.id);
+        const docSnap = await getDoc(docRef);
+
+        if (!docSnap.exists()) {
+            throw new Error('Document not found in Firestore');
+        }
+
+        let currentData = docSnap.data();
+        const newRatingCount = (currentData.ratingCount || 0) + 1;
+        const newTotalRatings = (currentData.totalRatings || 0) + rating;
+        const newAvgRating = newTotalRatings / newRatingCount;
+
+        await updateDoc(docRef, {
+            avgRating: newAvgRating,
+            totalRatings: newTotalRatings,
+            ratingCount: newRatingCount,
+        });
+
+        faqRatings.value[index] = {
+            avgRating: newAvgRating.toFixed(1),
+            totalRatings: newTotalRatings,
+            ratingCount: newRatingCount
+        };
+        userRating.value[index] = rating;
+        showThankYou.value[index] = true;
+
+        // Disable all rating buttons except the selected one
+        const buttons = document.querySelectorAll(`.faqs-list:nth-child(${index + 1}) .rating-buttons button`);
+        buttons.forEach(button => {
+            const buttonRating = parseInt(button.textContent);
+            button.disabled = buttonRating !== rating;
+        });
+
+    } catch (error) {
+        console.error('Error updating FAQ rating:', error);
     }
-
-    const newRatingCount = currentData.ratingCount + 1;
-    const newTotalRatings = currentData.totalRatings + rating;
-    const newAvgRating = newTotalRatings / newRatingCount;
-
-    await setDoc(docRef, {
-        avgRating: newAvgRating,
-        totalRatings: newTotalRatings,
-        ratingCount: newRatingCount,
-    });
-
-    faqRatings.value[index] = { avgRating: newAvgRating.toFixed(1), totalRatings: newTotalRatings, ratingCount: newRatingCount };
-    userRating.value[index] = rating;
-
-    // Ensure the thank you message is displayed only after the rating is successfully stored
-    showThankYou.value[index] = true;
 };
+
+
+
 
 onMounted(() => {
     fetchFaqRatings();
 });
 </script>
+
+
 
 <style scoped>
 .introduction-section {
@@ -189,6 +242,12 @@ onMounted(() => {
 .rating-buttons button {
     min-width: 40px;
     height: 40px;
+    cursor: pointer;
+}
+
+.rating-buttons button:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
 }
 
 .thank-you-message {
