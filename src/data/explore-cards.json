@@ -1,0 +1,18 @@
+[
+    {
+      "image": "programs-events.jpg",
+      "text": "Program and Events",
+      "link": "/programs-events"
+    },
+    {
+      "image": "services-supports.jpg",
+      "text": "Support and Services",
+      "link": "/support-services"
+    },
+    {
+      "image": "neighborhood.jpg",
+      "text": "Neighborhood centers",
+      "link": "/neighborhood-centers"
+    }
+  ]
+  
