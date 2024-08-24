@@ -4,13 +4,15 @@
         <form @submit.prevent="handleRegister">
             <div class="form-group">
                 <label for="email">Email</label>
-                <input type="email" v-model="email" required />
+                <input type="email" v-model="email" @input="validateEmail" required />
+                <p v-if="emailError" class="error">{{ emailError }}</p>
             </div>
 
             <div class="form-group">
                 <label for="password">Password</label>
                 <div class="password-container">
-                    <input :type="showPassword ? 'text' : 'password'" v-model="password" required />
+                    <input :type="showPassword ? 'text' : 'password'" v-model="password" @input="validatePassword"
+                        required />
                     <span @click="togglePasswordVisibility" class="show-password-button">
                         {{ showPassword ? 'Hide' : 'Show' }}
                     </span>
@@ -21,7 +23,8 @@
             <div class="form-group">
                 <label for="confirmPassword">Confirm Password</label>
                 <div class="password-container">
-                    <input :type="showPassword ? 'text' : 'password'" v-model="confirmPassword" required />
+                    <input :type="showPassword ? 'text' : 'password'" v-model="confirmPassword"
+                        @input="validateConfirmPassword" required />
                     <span @click="togglePasswordVisibility" class="show-password-button">
                         {{ showPassword ? 'Hide' : 'Show' }}
                     </span>
@@ -41,6 +44,7 @@
     </div>
 </template>
 
+
 <script>
 import { db, auth } from '../data/firebase.js';
 import { collection, addDoc } from 'firebase/firestore';
@@ -53,15 +57,28 @@ export default {
             password: "",
             confirmPassword: "",
             role: "user",
+            emailError: "",
             passwordError: "",
             confirmPasswordError: "",
             showPassword: false,
         };
     },
     methods: {
-        validatePassword(password) {
+        validateEmail() {
+            const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!regex.test(this.email)) {
+                this.emailError = "Invalid email format.";
+            } else {
+                this.emailError = "";
+            }
+        },
+        validatePassword() {
             const regex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
-            return regex.test(password);
+            if (!regex.test(this.password)) {
+                this.passwordError = "Password must be at least 8 characters long and include one uppercase letter, one lowercase letter, one number, and one special character.";
+            } else {
+                this.passwordError = "";
+            }
         },
         validateConfirmPassword() {
             if (this.password !== this.confirmPassword) {
@@ -74,19 +91,10 @@ export default {
             this.showPassword = !this.showPassword;
         },
         async handleRegister() {
-            if (!this.validatePassword(this.password)) {
-                this.passwordError = "Password must be at least 8 characters long and include one uppercase letter, one lowercase letter, one number, and one special character.";
+            if (this.emailError || this.passwordError || this.confirmPasswordError) {
+                alert("Please correct the errors before submitting.");
                 return;
             }
-
-            if (this.password !== this.confirmPassword) {
-                this.confirmPasswordError = "Passwords do not match.";
-                return;
-            }
-
-            // Clear previous errors
-            this.passwordError = "";
-            this.confirmPasswordError = "";
 
             try {
                 const userCredential = await createUserWithEmailAndPassword(auth, this.email, this.password);
@@ -101,7 +109,7 @@ export default {
                 });
 
                 alert("Registration successful!");
-                this.$router.push('/login');
+                this.$router.push('/');
             } catch (error) {
                 console.error("Error during registration: ", error);
 
@@ -112,16 +120,15 @@ export default {
                 }
             }
         }
-
-    },
+    }
 };
 </script>
 
+
 <style scoped>
 .register-container {
-    max-width: 400px;
-    margin: 0 auto;
-    padding: 1rem;
+    margin: 5rem;
+    padding: 5rem;
     background-color: #f9f9f9;
     border-radius: 5px;
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);

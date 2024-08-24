@@ -9,7 +9,12 @@
 
             <div class="form-group">
                 <label for="password">Password</label>
-                <input type="password" v-model="password" required />
+                <div class="password-container">
+                    <input :type="showPassword ? 'text' : 'password'" v-model="password" required />
+                    <span @click="togglePasswordVisibility" class="show-password-button">
+                        {{ showPassword ? 'Hide' : 'Show' }}
+                    </span>
+                </div>
             </div>
 
             <div class="form-group">
@@ -39,8 +44,6 @@
 // Import Firebase functions
 import { getFirestore, collection, addDoc, query, where, getDocs } from "firebase/firestore";
 import { getAuth, signInWithEmailAndPassword } from "firebase/auth";
-
-// Import local JSON data
 import accounts from '../data/accounts.json';
 
 export default {
@@ -50,6 +53,7 @@ export default {
             password: "",
             role: "user", // Default role
             submitted: false,
+            showPassword: false, // Added for showing/hiding password
         };
     },
     methods: {
@@ -96,7 +100,7 @@ export default {
                     const collectionName = account.role === 'admin' ? 'admins' : 'users';
                     await addDoc(collection(db, collectionName), {
                         email: account.email,
-                        password: account.password, 
+                        password: account.password,
                         role: account.role
                     });
                 });
@@ -105,6 +109,10 @@ export default {
                 console.error("Error uploading accounts: ", error);
             }
         },
+
+        togglePasswordVisibility() {
+            this.showPassword = !this.showPassword;
+        }
     },
 
     // mounted (Lifecycle hook) to initialize Firebase accounts
@@ -117,9 +125,8 @@ export default {
 
 <style scoped>
 .login-container {
-    max-width: 400px;
-    margin: 0 auto;
-    padding: 1rem;
+    margin: 5rem;
+    padding: 5rem;
     background-color: #f9f9f9;
     border-radius: 5px;
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
@@ -127,6 +134,10 @@ export default {
 
 .form-group {
     margin-bottom: 1rem;
+}
+
+.register-link {
+    margin-top: 1rem;
 }
 
 label {
@@ -152,5 +163,29 @@ button {
 
 button:hover {
     background-color: #0056b3;
+}
+
+.password-container {
+    display: flex;
+    align-items: center;
+    position: relative;
+}
+
+.password-container input {
+    flex: 1;
+    padding-right: 4rem;
+}
+
+.show-password-button {
+    position: absolute;
+    right: 0;
+    height: 100%;
+    border: none;
+    background-color: transparent;
+    color: #007bff;
+    cursor: pointer;
+    padding: 0 1rem;
+    display: flex;
+    align-items: center;
 }
 </style>
