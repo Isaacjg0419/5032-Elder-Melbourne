@@ -3,14 +3,14 @@
     <Navbar />
     <div class="introduction-section">
       <div class="row">
-        <div class="col-6">
+        <div class="col-12 col-lg-6">
           <h1>Elder Community Introduction</h1>
-          <p style="padding-left:40px;margin-top: 20px;">
+          <p class="introduction-text">
             The City of Melbourne offers a range of programs and<br>
             services to support older people to remain active, independent and living at home.​
           </p>
         </div>
-        <div class="col-6">
+        <div class="col-12 col-lg-6">
           <img :src="oldPeopleImage" alt="old-people here" class="responsive-image">
         </div>
       </div>
@@ -40,7 +40,6 @@ const oldPeopleImage = oldPeople;
 const cardData = ref([]);
 const imageMap = ref({});
 
-// Create a map for image paths
 onMounted(() => {
   cardData.value = cardsData;
   imageMap.value = Object.keys(imageFiles).reduce((map, path) => {
@@ -50,11 +49,20 @@ onMounted(() => {
   }, {});
 });
 </script>
-
 <style scoped>
 .introduction-section {
   margin-top: 20px;
   padding: 20px;
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+}
+
+.introduction-text {
+  padding: 20px;
+  max-width: 800px;
 }
 
 .responsive-image {
@@ -67,12 +75,22 @@ onMounted(() => {
 .explore-section {
   margin-top: 40px;
   padding: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  text-align: left;
+}
+
+.explore-section h2 {
+  margin-bottom: 20px;
 }
 
 .card-container {
   display: flex;
   flex-wrap: wrap;
   gap: 20px;
+  justify-content: center;
+  width: 100%;
 }
 
 .card {
@@ -81,6 +99,10 @@ onMounted(() => {
   overflow: hidden;
   width: 30%;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
 }
 
 .card-image {
@@ -97,5 +119,45 @@ onMounted(() => {
 .card-text {
   font-size: 1rem;
   margin: 10px;
+}
+
+@media (min-width: 992px) {
+  .introduction-section {
+    flex-direction: row;
+  }
+
+  .introduction-section h1 {
+    font-size: 2.5rem;
+  }
+
+  .introduction-text p {
+    font-size: 1.25rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .introduction-section {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .introduction-text {
+    margin: 0;
+    padding: 10px;
+    max-width: none;
+  }
+
+  .responsive-image {
+    margin: 0;
+    width: 100%;
+  }
+
+  .card-container {
+    flex-direction: column;
+  }
+
+  .card {
+    width: 100%;
+  }
 }
 </style>
