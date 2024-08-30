@@ -5,7 +5,7 @@
             aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
             <span class="navbar-toggler-icon"></span>
         </button>
-        <div class="collapse navbar-collapse" id="navbarNav">
+        <div class="collapse navbar-collapse justify-content-center" id="navbarNav">
             <ul class="navbar-nav">
                 <li class="nav-item">
                     <router-link :class="{ 'active-link': isActive('/user-home') }" class="nav-link"
@@ -25,7 +25,7 @@
                 </li>
             </ul>
         </div>
-        <div class="login">
+        <div class="login d-none d-lg-block">
             <router-link :class="{ 'active-link': isActive('/') }" class="nav-link" to="/">Login</router-link>
         </div>
     </nav>
@@ -58,6 +58,12 @@ body {
 
 .container {
     margin-top: 0;
+}
+
+.navbar-nav {
+    display: flex;
+    justify-content: center;
+    width: 100%;
 }
 
 .navbar-nav .nav-link {
