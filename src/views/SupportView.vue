@@ -3,16 +3,16 @@
         <Navbar />
         <div class="introduction-section">
             <div class="row">
-                <div class="col-6">
+                <div class="col-12 col-lg-6">
                     <h1>Services and Support</h1>
-                    <p style="padding-left:40px;margin-top: 20px;">
+                    <p class="introduction-text">
                         When you or your loved ones need support, it can be hard<br>
                         to know who to turn to. The information on this page<br>
                         offers a starting point for older people, their carers and families to access
                         the support, information and services they need.
                     </p>
                 </div>
-                <div class="col-6">
+                <div class="col-12 col-lg-6">
                     <img :src="supportsImage" alt="supports here" class="responsive-image">
                 </div>
             </div>
@@ -181,6 +181,16 @@ onMounted(() => {
 .introduction-section {
     margin-top: 20px;
     padding: 20px;
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+}
+
+.introduction-text {
+    padding: 20px;
+    max-width: 800px;
 }
 
 .responsive-image {

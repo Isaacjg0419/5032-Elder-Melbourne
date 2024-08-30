@@ -28,12 +28,12 @@
             <button type="submit">Login</button>
         </form>
 
-        <div v-if="submitted">
+        <!-- <div v-if="submitted">
             <h3>Submitted Data:</h3>
             <p>Email: {{ email }}</p>
             <p>Password: {{ password }}</p>
             <p>Role: {{ role }}</p>
-        </div>
+        </div> -->
         <div class="register-link">
             <p>Don't have an account? <a href="/register">Register a new one</a></p>
         </div>
@@ -41,7 +41,6 @@
 </template>
 
 <script>
-// Import Firebase functions
 import { getFirestore, collection, addDoc, query, where, getDocs } from "firebase/firestore";
 import { getAuth, signInWithEmailAndPassword } from "firebase/auth";
 import accounts from '../data/accounts.json';
@@ -51,16 +50,13 @@ export default {
         return {
             email: "",
             password: "",
-            role: "user", // Default role
-            submitted: false,
-            showPassword: false, // Added for showing/hiding password
+            role: "user",
+            showPassword: false, 
         };
     },
     methods: {
         async handleLogin() {
-            this.submitted = true;
             try {
-                // Firebase Authentication sign-in
                 const auth = getAuth();
                 const userCredential = await signInWithEmailAndPassword(auth, this.email, this.password);
 
@@ -95,7 +91,7 @@ export default {
             const db = getFirestore();
 
             try {
-                // Write accounts to Firebase (admins and users)
+                // add accounts to Firebase (admins and users)
                 accounts.accounts.forEach(async account => {
                     const collectionName = account.role === 'admin' ? 'admins' : 'users';
                     await addDoc(collection(db, collectionName), {
@@ -115,7 +111,6 @@ export default {
         }
     },
 
-    // mounted (Lifecycle hook) to initialize Firebase accounts
     async mounted() {
         // Uncomment to upload accounts to Firebase only once
         // await this.uploadAccountsToFirebase();
@@ -125,11 +120,30 @@ export default {
 
 <style scoped>
 .login-container {
-    margin: 5rem;
-    padding: 5rem;
+    margin: 2rem;
+    padding: 2rem;
+    max-width: 100%;
+    width: 100%;
     background-color: #f9f9f9;
     border-radius: 5px;
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
+
+
+@media (min-width: 576px) {
+    .login-container {
+        margin: 3rem auto;
+        padding: 3rem;
+        max-width: 500px;
+    }
+}
+
+@media (min-width: 768px) {
+    .login-container {
+        margin: 4rem auto;
+        padding: 4rem;
+        max-width: 600px;
+    }
 }
 
 .form-group {
@@ -150,6 +164,7 @@ select {
     width: 100%;
     padding: 0.5rem;
     margin-bottom: 1rem;
+    margin-top: 1rem;
 }
 
 button {

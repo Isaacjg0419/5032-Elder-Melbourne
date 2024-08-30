@@ -21,7 +21,7 @@
             </div>
 
             <div class="form-group">
-                <label for="confirmPassword">Confirm Password</label>
+                <label for="confirmPassword">Confirmed Password</label>
                 <div class="password-container">
                     <input :type="showPassword ? 'text' : 'password'" v-model="confirmPassword"
                         @input="validateConfirmPassword" required />
@@ -41,6 +41,9 @@
 
             <button type="submit">Register</button>
         </form>
+        <div class="login-link">
+            Already have an email account? <router-link to="/">Login</router-link>
+        </div>
     </div>
 </template>
 
@@ -127,11 +130,29 @@ export default {
 
 <style scoped>
 .register-container {
-    margin: 5rem;
-    padding: 5rem;
+    margin: 2rem;
+    padding: 2rem;
+    max-width: 100%;
+    width: 100%;
     background-color: #f9f9f9;
     border-radius: 5px;
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
+
+@media (min-width: 576px) {
+    .register-container {
+        margin: 3rem auto;
+        padding: 3rem;
+        max-width: 500px;
+    }
+}
+
+@media (min-width: 768px) {
+    .register-container {
+        margin: 4rem auto;
+        padding: 4rem;
+        max-width: 550px;
+    }
 }
 
 .form-group {
@@ -148,6 +169,7 @@ select {
     width: 100%;
     padding: 0.5rem;
     margin-bottom: 1rem;
+    margin-top: 1rem;
 }
 
 button {
@@ -189,5 +211,19 @@ button:hover {
 
 .error {
     color: red;
+}
+
+.login-link {
+    margin-top: 1rem;
+    text-align: center;
+}
+
+.login-link a {
+    color: #007bff;
+    text-decoration: none;
+}
+
+.login-link a:hover {
+    text-decoration: underline;
 }
 </style>
