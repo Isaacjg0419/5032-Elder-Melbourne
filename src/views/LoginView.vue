@@ -55,12 +55,12 @@ export default {
         };
     },
     methods: {
-        // Sanitize input to prevent XSS attacks
+        // Sanitize input to prevent XSS attacks with DOMPurify
         sanitizeInput(input) {
             return DOMPurify.sanitize(input);
         },
 
-        // Validate email format
+        // Validate email format with illegal characters
         validateEmail() {
             const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
             const sanitizedEmail = this.sanitizeInput(this.email);
@@ -110,7 +110,6 @@ export default {
             this.email = this.sanitizeInput(this.email);
             this.password = this.sanitizeInput(this.password);
 
-            // Validate inputs
             this.validateEmail();
             this.validatePassword();
 

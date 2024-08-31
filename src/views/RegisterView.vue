@@ -67,12 +67,12 @@ export default {
         };
     },
     methods: {
-        // Sanitize input to remove potential XSS vulnerabilities
+        // Sanitize input to remove potential XSS attacks,use DOMPurify
         sanitizeInput(input) {
             return DOMPurify.sanitize(input);
         },
 
-        // Validate email format
+        // Validate email format,regex for illegal special characters
         validateEmail() {
             const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
             const sanitizedEmail = this.sanitizeInput(this.email);
@@ -91,7 +91,7 @@ export default {
             const hasLowercase = /[a-z]/;
             const hasDigit = /\d/;
             const hasSpecialChar = /[@$!%*?&]/;
-            // Regex to detect illegal characters (anything that's not alphanumeric or a special character)
+            // detect illegal characters 
             const illegalCharRegex = /[^a-zA-Z0-9@$!%*?&]/;
 
             let errorMessage = "";
@@ -99,7 +99,7 @@ export default {
             if (illegalCharRegex.test(sanitizedPassword)) {
                 errorMessage = "Password contains illegal characters.";
             } else {
-                // Check for each required criteria and build error message
+                // check different validation requirements with different mentions msgs
                 if (!hasUppercase.test(sanitizedPassword)) {
                     errorMessage = "Password must include at least one uppercase letter.";
                 } else if (!hasLowercase.test(sanitizedPassword)) {
@@ -118,7 +118,7 @@ export default {
             this.passwordError = errorMessage;
         },
 
-        // Validate if the confirm password matches the password
+        // Validate if the confirmed password does not match the password
         validateConfirmPassword() {
             const sanitizedPassword = this.sanitizeInput(this.password);
             const sanitizedConfirmPassword = this.sanitizeInput(this.confirmPassword);
@@ -129,7 +129,7 @@ export default {
             }
         },
 
-        // Toggle password visibility
+        // switch password visibility
         togglePasswordVisibility() {
             this.showPassword = !this.showPassword;
         },
