@@ -21,7 +21,7 @@
             </div>
 
             <div class="form-group">
-                <label for="confirmPassword">Confirmed Password</label>
+                <label for="confirmPassword">Confirm Password</label>
                 <div class="password-container">
                     <input :type="showPassword ? 'text' : 'password'" v-model="confirmPassword"
                         @input="validateConfirmPassword" required />
@@ -35,23 +35,23 @@
             <label for="role">Select Role</label>
             <select class="form-select form-select-sm" v-model="role" required
                 style="margin-top: 1rem; margin-bottom: 1rem;">
-                <option value="user">User</option>
-                <option value="admin">Admin</option>
+                <option value="user">Regular User</option>
+                <option value="admin">Administrator</option>
             </select>
 
             <button type="submit">Register</button>
         </form>
         <div class="login-link">
-            Already have an email account? <router-link to="/">Login</router-link>
+            Already have an account? <router-link to="/">Login</router-link>
         </div>
     </div>
 </template>
-
 
 <script>
 import { db, auth } from '../data/firebase.js';
 import { collection, addDoc } from 'firebase/firestore';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
+import DOMPurify from 'dompurify';
 
 export default {
     data() {
@@ -67,46 +67,92 @@ export default {
         };
     },
     methods: {
+        // Sanitize input to remove potential XSS vulnerabilities
+        sanitizeInput(input) {
+            return DOMPurify.sanitize(input);
+        },
+
+        // Validate email format
         validateEmail() {
             const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-            if (!regex.test(this.email)) {
+            const sanitizedEmail = this.sanitizeInput(this.email);
+            if (!regex.test(sanitizedEmail)) {
                 this.emailError = "Invalid email format.";
             } else {
                 this.emailError = "";
             }
         },
+
         validatePassword() {
-            const regex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
-            if (!regex.test(this.password)) {
-                this.passwordError = "Password must be at least 8 characters long and include one uppercase letter, one lowercase letter, one number, and one special character.";
+            const sanitizedPassword = this.sanitizeInput(this.password);
+
+            // Regex to check for required password format
+            const hasUppercase = /[A-Z]/;
+            const hasLowercase = /[a-z]/;
+            const hasDigit = /\d/;
+            const hasSpecialChar = /[@$!%*?&]/;
+            // Regex to detect illegal characters (anything that's not alphanumeric or a special character)
+            const illegalCharRegex = /[^a-zA-Z0-9@$!%*?&]/;
+
+            let errorMessage = "";
+
+            if (illegalCharRegex.test(sanitizedPassword)) {
+                errorMessage = "Password contains illegal characters.";
             } else {
-                this.passwordError = "";
+                // Check for each required criteria and build error message
+                if (!hasUppercase.test(sanitizedPassword)) {
+                    errorMessage = "Password must include at least one uppercase letter.";
+                } else if (!hasLowercase.test(sanitizedPassword)) {
+                    errorMessage = "Password must include at least one lowercase letter.";
+                } else if (!hasDigit.test(sanitizedPassword)) {
+                    errorMessage = "Password must include at least one number.";
+                } else if (!hasSpecialChar.test(sanitizedPassword)) {
+                    errorMessage = "Password must include at least one special character.";
+                } else if (sanitizedPassword.length < 8) {
+                    errorMessage = "Password must be at least 8 characters long.";
+                } else {
+                    errorMessage = "";
+                }
             }
+
+            this.passwordError = errorMessage;
         },
+
+        // Validate if the confirm password matches the password
         validateConfirmPassword() {
-            if (this.password !== this.confirmPassword) {
+            const sanitizedPassword = this.sanitizeInput(this.password);
+            const sanitizedConfirmPassword = this.sanitizeInput(this.confirmPassword);
+            if (sanitizedPassword !== sanitizedConfirmPassword) {
                 this.confirmPasswordError = "Passwords do not match.";
             } else {
                 this.confirmPasswordError = "";
             }
         },
+
+        // Toggle password visibility
         togglePasswordVisibility() {
             this.showPassword = !this.showPassword;
         },
+
+        // Handle the registration process
         async handleRegister() {
+            const sanitizedEmail = this.sanitizeInput(this.email);
+            const sanitizedPassword = this.sanitizeInput(this.password);
+            const sanitizedConfirmPassword = this.sanitizeInput(this.confirmPassword);
+
             if (this.emailError || this.passwordError || this.confirmPasswordError) {
                 alert("Please correct the errors before submitting.");
                 return;
             }
 
             try {
-                const userCredential = await createUserWithEmailAndPassword(auth, this.email, this.password);
+                const userCredential = await createUserWithEmailAndPassword(auth, sanitizedEmail, sanitizedPassword);
                 const user = userCredential.user;
 
-                // Save user data to Firestore
+                // Save user data to Firestore based on role
                 const collectionName = this.role === "admin" ? "admins" : "users";
                 await addDoc(collection(db, collectionName), {
-                    email: this.email,
+                    email: sanitizedEmail,
                     role: this.role,
                     uid: user.uid
                 });
@@ -116,6 +162,7 @@ export default {
             } catch (error) {
                 console.error("Error during registration: ", error);
 
+                // Handle specific registration errors
                 if (error.code === 'auth/email-already-in-use') {
                     alert("This email is already in use. Please use another email.");
                 } else {
@@ -126,7 +173,6 @@ export default {
     }
 };
 </script>
-
 
 <style scoped>
 .register-container {

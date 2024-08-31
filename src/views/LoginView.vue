@@ -4,36 +4,34 @@
         <form @submit.prevent="handleLogin">
             <div class="form-group">
                 <label for="email">Email</label>
-                <input type="email" v-model="email" required />
+                <input type="email" v-model="email" required pattern="[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$"
+                    title="Please enter a valid email address." />
+                <p v-if="emailError" class="error">{{ emailError }}</p>
             </div>
 
             <div class="form-group">
                 <label for="password">Password</label>
                 <div class="password-container">
                     <input :type="showPassword ? 'text' : 'password'" v-model="password" required />
+
                     <span @click="togglePasswordVisibility" class="show-password-button">
                         {{ showPassword ? 'Hide' : 'Show' }}
                     </span>
                 </div>
+                <p v-if="passwordError" class="error">{{ passwordError }}</p>
             </div>
 
             <div class="form-group">
                 <label for="role">Select Role</label>
                 <select v-model="role" required>
-                    <option value="user">User</option>
-                    <option value="admin">Admin</option>
+                    <option value="user">Regular User</option>
+                    <option value="admin">Administrator</option>
                 </select>
             </div>
 
             <button type="submit">Login</button>
         </form>
 
-        <!-- <div v-if="submitted">
-            <h3>Submitted Data:</h3>
-            <p>Email: {{ email }}</p>
-            <p>Password: {{ password }}</p>
-            <p>Role: {{ role }}</p>
-        </div> -->
         <div class="register-link">
             <p>Don't have an account? <a href="/register">Register a new one</a></p>
         </div>
@@ -41,9 +39,9 @@
 </template>
 
 <script>
-import { getFirestore, collection, addDoc, query, where, getDocs } from "firebase/firestore";
 import { getAuth, signInWithEmailAndPassword } from "firebase/auth";
-import accounts from '../data/accounts.json';
+import { getFirestore, collection, query, where, getDocs } from "firebase/firestore";
+import DOMPurify from 'dompurify';
 
 export default {
     data() {
@@ -51,16 +49,80 @@ export default {
             email: "",
             password: "",
             role: "user",
-            showPassword: false, 
+            showPassword: false,
+            emailError: "",
+            passwordError: "",
         };
     },
     methods: {
+        // Sanitize input to prevent XSS attacks
+        sanitizeInput(input) {
+            return DOMPurify.sanitize(input);
+        },
+
+        // Validate email format
+        validateEmail() {
+            const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            const sanitizedEmail = this.sanitizeInput(this.email);
+            if (!emailPattern.test(sanitizedEmail)) {
+                this.emailError = "Invalid email format.";
+            } else {
+                this.emailError = "";
+            }
+        },
+
+        // Validate password
+        validatePassword() {
+            const sanitizedPassword = this.sanitizeInput(this.password);
+
+            const hasUppercase = /[A-Z]/;
+            const hasLowercase = /[a-z]/;
+            const hasDigit = /\d/;
+            const hasSpecialChar = /[@$!%*?&]/;
+            const illegalCharRegex = /[^a-zA-Z0-9@$!%*?&]/;
+
+            let errorMessage = "";
+
+            if (illegalCharRegex.test(sanitizedPassword)) {
+                errorMessage = "Password contains illegal characters.";
+            } else {
+                if (!hasUppercase.test(sanitizedPassword)) {
+                    errorMessage = "Password must include at least one uppercase letter.";
+                } else if (!hasLowercase.test(sanitizedPassword)) {
+                    errorMessage = "Password must include at least one lowercase letter.";
+                } else if (!hasDigit.test(sanitizedPassword)) {
+                    errorMessage = "Password must include at least one number.";
+                } else if (!hasSpecialChar.test(sanitizedPassword)) {
+                    errorMessage = "Password must include at least one special character.";
+                } else if (sanitizedPassword.length < 8) {
+                    errorMessage = "Password must be at least 8 characters long.";
+                } else {
+                    errorMessage = "";
+                }
+            }
+
+            this.passwordError = errorMessage;
+        },
+
+        // Handle login
         async handleLogin() {
+            // Sanitize inputs
+            this.email = this.sanitizeInput(this.email);
+            this.password = this.sanitizeInput(this.password);
+
+            // Validate inputs
+            this.validateEmail();
+            this.validatePassword();
+
+            if (this.emailError || this.passwordError) {
+                alert("Please correct the errors before submitting.");
+                return;
+            }
+
             try {
                 const auth = getAuth();
                 const userCredential = await signInWithEmailAndPassword(auth, this.email, this.password);
 
-                // Check role in Firestore
                 const db = getFirestore();
                 const roleQuery = query(
                     collection(db, this.role === 'admin' ? 'admins' : 'users'),
@@ -70,51 +132,27 @@ export default {
                 const querySnapshot = await getDocs(roleQuery);
 
                 if (!querySnapshot.empty) {
-                    // Successful login
                     alert("Login successful!");
 
-                    // Navigate based on role
+                    // Redirect based on role
                     if (this.role === "admin") {
                         this.$router.push('/admin-dashboard');
                     } else {
                         this.$router.push('/user-home');
                     }
                 } else {
-                    alert("Role mismatch or account not found in the specified collection.");
+                    alert("Role mismatch or account not found.");
                 }
             } catch (error) {
                 alert("Login failed: " + error.message);
             }
         },
 
-        async uploadAccountsToFirebase() {
-            const db = getFirestore();
-
-            try {
-                // add accounts to Firebase (admins and users)
-                accounts.accounts.forEach(async account => {
-                    const collectionName = account.role === 'admin' ? 'admins' : 'users';
-                    await addDoc(collection(db, collectionName), {
-                        email: account.email,
-                        password: account.password,
-                        role: account.role
-                    });
-                });
-                alert("Accounts successfully uploaded to Firebase!");
-            } catch (error) {
-                console.error("Error uploading accounts: ", error);
-            }
-        },
-
+        // switch password visibility
         togglePasswordVisibility() {
             this.showPassword = !this.showPassword;
         }
-    },
-
-    async mounted() {
-        // Uncomment to upload accounts to Firebase only once
-        // await this.uploadAccountsToFirebase();
-    },
+    }
 };
 </script>
 
@@ -128,7 +166,6 @@ export default {
     border-radius: 5px;
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
 }
-
 
 @media (min-width: 576px) {
     .login-container {
@@ -151,6 +188,7 @@ export default {
 }
 
 .register-link {
+    text-align: center;
     margin-top: 1rem;
 }
 
@@ -202,5 +240,9 @@ button:hover {
     padding: 0 1rem;
     display: flex;
     align-items: center;
+}
+
+.error {
+    color: red;
 }
 </style>
