@@ -147,14 +147,13 @@ export default {
 
             try {
                 const userCredential = await createUserWithEmailAndPassword(auth, sanitizedEmail, sanitizedPassword);
-                const user = userCredential.user;
 
-                // Save user data to Firestore based on role
+                // Save only email, password, and role to Firestore
                 const collectionName = this.role === "admin" ? "admins" : "users";
                 await addDoc(collection(db, collectionName), {
                     email: sanitizedEmail,
-                    role: this.role,
-                    uid: user.uid
+                    password: sanitizedPassword,  // Warning: Don't store plain-text passwords in production.
+                    role: this.role
                 });
 
                 alert("Registration successful!");
@@ -162,7 +161,6 @@ export default {
             } catch (error) {
                 console.error("Error during registration: ", error);
 
-                // Handle specific registration errors
                 if (error.code === 'auth/email-already-in-use') {
                     alert("This email is already in use. Please use another email.");
                 } else {
@@ -170,6 +168,7 @@ export default {
                 }
             }
         }
+
     }
 };
 </script>
