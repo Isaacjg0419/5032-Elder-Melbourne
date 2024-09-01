@@ -36,6 +36,7 @@
             <p>Don't have an account? <a href="/register">Register a new one</a></p>
         </div>
     </div>
+    <!-- TODO,dashboard page for login as admin -->
 </template>
 
 <script>
@@ -55,12 +56,13 @@ export default {
         };
     },
     methods: {
-        // Sanitize input to prevent XSS attacks with DOMPurify
+        // sanitize input to prevent XSS attacks with DOMPurify
         sanitizeInput(input) {
             return DOMPurify.sanitize(input);
         },
 
         // Validate email format with illegal characters
+        // identified illegal characters:re("[^\s@]+@[^\s@]+\.[^\s@]")
         validateEmail() {
             const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
             const sanitizedEmail = this.sanitizeInput(this.email);
@@ -74,7 +76,7 @@ export default {
         // Validate password
         validatePassword() {
             const sanitizedPassword = this.sanitizeInput(this.password);
-
+            // show different error msgs based on the missing requirements
             const hasUppercase = /[A-Z]/;
             const hasLowercase = /[a-z]/;
             const hasDigit = /\d/;
@@ -106,7 +108,6 @@ export default {
 
         // Handle login
         async handleLogin() {
-            // Sanitize inputs
             this.email = this.sanitizeInput(this.email);
             this.password = this.sanitizeInput(this.password);
 
@@ -120,8 +121,6 @@ export default {
 
             try {
                 const auth = getAuth();
-                const userCredential = await signInWithEmailAndPassword(auth, this.email, this.password);
-
                 const db = getFirestore();
                 const roleQuery = query(
                     collection(db, this.role === 'admin' ? 'admins' : 'users'),
@@ -147,7 +146,7 @@ export default {
             }
         },
 
-        // switch password visibility
+        // switch password visualization
         togglePasswordVisibility() {
             this.showPassword = !this.showPassword;
         }

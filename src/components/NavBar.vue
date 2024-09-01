@@ -7,6 +7,7 @@
         </button>
         <div class="collapse navbar-collapse justify-content-center" id="navbarNav">
             <ul class="navbar-nav">
+                <!-- navbar to complete the support currently, other pages TODO later -->
                 <li class="nav-item">
                     <router-link :class="{ 'active-link': isActive('/user-home') }" class="nav-link"
                         to="/user-home">Program and Events</router-link>
@@ -29,6 +30,7 @@
             <router-link :class="{ 'active-link': isActive('/') }" class="nav-link" to="/">Login</router-link>
         </div>
     </nav>
+    <!-- TODO,login as the profile logo,can be logout after login -->
 </template>
 
 <script setup>
@@ -49,6 +51,7 @@ body {
     height: 100%;
 }
 
+/* relative position for global navbar  */
 .navbar {
     margin: 0;
     width: 100vw;

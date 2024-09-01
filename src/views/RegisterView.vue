@@ -152,7 +152,7 @@ export default {
                 const collectionName = this.role === "admin" ? "admins" : "users";
                 await addDoc(collection(db, collectionName), {
                     email: sanitizedEmail,
-                    password: sanitizedPassword,  // Warning: Don't store plain-text passwords in production.
+                    password: sanitizedPassword,
                     role: this.role
                 });
 

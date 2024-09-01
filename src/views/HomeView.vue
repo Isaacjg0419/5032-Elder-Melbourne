@@ -1,6 +1,7 @@
 <template>
   <div>
     <Navbar />
+    <!--introduction section  -->
     <div class="introduction-section">
       <div class="row">
         <div class="col-12 col-lg-6">
@@ -15,6 +16,7 @@
         </div>
       </div>
     </div>
+    <!--introduction section  -->
     <div class="explore-section">
       <h2>Explore</h2>
       <div class="card-container">
@@ -33,15 +35,18 @@ import oldPeople from '@/assets/older-people.jpg';
 import Navbar from '../components/NavBar.vue';
 import cardsData from '@/data/explore-cards.json';
 
-// Import all images from the assets folder
 const imageFiles = import.meta.glob('@/assets/*.jpg', { eager: true });
-
 const oldPeopleImage = oldPeople;
+// ref to hold card data
 const cardData = ref([]);
+//ref to hold a map of image paths to their imported images
 const imageMap = ref({});
 
+// onMounted lifecycle hook to identify the cardData for explore section
 onMounted(() => {
   cardData.value = cardsData;
+  // identify a map of image filenames to imported image URLs:
+  // extract the filename,then map the filename to the imported image URL
   imageMap.value = Object.keys(imageFiles).reduce((map, path) => {
     const key = path.split('/').pop();
     map[key] = imageFiles[path].default;
