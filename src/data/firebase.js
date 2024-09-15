@@ -1,9 +1,9 @@
 // firebase.js
 import { initializeApp } from 'firebase/app'
 import { getFirestore } from 'firebase/firestore'
-import { getAuth } from 'firebase/auth' // 导入Firebase Authentication
+import { getAuth } from 'firebase/auth'
+import { getFunctions } from 'firebase/functions'
 
-// Your web app's Firebase configuration
 const firebaseConfig = {
   apiKey: 'AIzaSyDaEyQ5hYpaWNvWFWMPo-7vYYt3_Fb9iRE',
   authDomain: 'db-67c2b.firebaseapp.com',
@@ -18,5 +18,6 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig)
 const db = getFirestore(app)
 const auth = getAuth(app)
+const functions = getFunctions(app)
 
-export { db, auth }
+export { db, auth, functions }

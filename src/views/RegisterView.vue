@@ -50,6 +50,7 @@
 <script>
 import { db, auth } from '../data/firebase.js';
 import { collection, addDoc } from 'firebase/firestore';
+import { getFunctions, httpsCallable } from 'firebase/functions';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 import DOMPurify from 'dompurify';
 
@@ -134,7 +135,22 @@ export default {
             this.showPassword = !this.showPassword;
         },
 
-        // Handle the registration process
+        async fileToBase64(url) {
+            try {
+                const response = await fetch(url);
+                const blob = await response.blob();
+                return new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onloadend = () => resolve(reader.result.split(',')[1]);
+                    reader.onerror = reject;
+                    reader.readAsDataURL(blob);
+                });
+            } catch (error) {
+                console.error("Error converting file to base64:", error);
+                throw error;
+            }
+        },
+
         async handleRegister() {
             const sanitizedEmail = this.sanitizeInput(this.email);
             const sanitizedPassword = this.sanitizeInput(this.password);
@@ -146,15 +162,38 @@ export default {
             }
 
             try {
-                const userCredential = await createUserWithEmailAndPassword(auth, sanitizedEmail, sanitizedPassword);
+                console.log("Registering user with email:", sanitizedEmail);
 
-                // Save only email, password, and role to Firestore
+                // Register the user
+                const userCredential = await createUserWithEmailAndPassword(auth, sanitizedEmail, sanitizedPassword);
+                console.log("User registered successfully:", userCredential);
+
+                // Determine the collection based on role
                 const collectionName = this.role === "admin" ? "admins" : "users";
                 await addDoc(collection(db, collectionName), {
                     email: sanitizedEmail,
                     password: sanitizedPassword,
                     role: this.role
                 });
+                console.log(`User added to ${collectionName} collection`);
+
+                // Get the base64 content of the PDF from the public directory
+                const pdfUrl = '/attachments/welcome_user_utf8.pdf';
+                const pdfBase64 = await this.fileToBase64(pdfUrl);
+                console.log("PDF converted to base64");
+
+                // Call Cloud Function
+                const functions = getFunctions();
+                const sendEmailWithAttachment = httpsCallable(functions, 'sendEmailWithAttachment');
+                console.log(sendEmailWithAttachment)
+                await sendEmailWithAttachment({
+                    to: sanitizedEmail,
+                    subject: 'Welcome to join Elder Melbourne',
+                    text: `Hello ${sanitizedEmail},\n\nWelcome to Elder Melbourne Community! We are glad to have you on board.\n\nBest regards,\nTeam`,
+                    attachmentContent: pdfBase64,
+                    attachmentFileName: 'welcome_user_utf8.pdf'
+                });
+                console.log("Email sent successfully");
 
                 alert("Registration successful!");
                 this.$router.push('/');
@@ -168,7 +207,6 @@ export default {
                 }
             }
         }
-
     }
 };
 </script>
