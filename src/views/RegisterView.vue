@@ -53,6 +53,7 @@ import { collection, addDoc } from 'firebase/firestore';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 import DOMPurify from 'dompurify';
+import axios from 'axios';
 
 export default {
     data() {
@@ -179,34 +180,45 @@ export default {
 
                 // Get the base64 content of the PDF from the public directory
                 const pdfUrl = '/attachments/welcome_user_utf8.pdf';
-                const pdfBase64 = await this.fileToBase64(pdfUrl);
-                console.log("PDF converted to base64");
+                let pdfBase64;
+                try {
+                    pdfBase64 = await this.fileToBase64(pdfUrl);
+                    console.log("PDF converted to base64 successfully");
+                } catch (fileError) {
+                    console.error("Error converting PDF to base64:", fileError);
+                    alert("There was an issue loading the welcome document. Registration might still be successful.");
+                    return;
+                }
 
-                // Call Cloud Function
-                const functions = getFunctions();
-                const sendEmailWithAttachment = httpsCallable(functions, 'sendEmailWithAttachment');
-                console.log(sendEmailWithAttachment)
-                await sendEmailWithAttachment({
-                    to: sanitizedEmail,
-                    subject: 'Welcome to join Elder Melbourne',
-                    text: `Hello ${sanitizedEmail},\n\nWelcome to Elder Melbourne Community! We are glad to have you on board.\n\nBest regards,\nTeam`,
-                    attachmentContent: pdfBase64,
-                    attachmentFileName: 'welcome_user_utf8.pdf'
-                });
-                console.log("Email sent successfully");
+                try {
+                    const response = await axios.post('https://us-central1-db-67c2b.cloudfunctions.net/sendEmail', {
+                        to: sanitizedEmail,
+                        subject: 'Welcome to Elder Melbourne',
+                        text: `Hello ${sanitizedEmail},\n\nWelcome to Elder Melbourne Community! We are glad to have you on board.\n\nBest regards,\nTeam`,
+                        attachmentContent: pdfBase64,
+                        attachmentFileName: 'welcome_user_utf8.pdf'
+                    });
+                    console.log("Email with attachment sent successfully");
+                    alert('Registration successful and email sent!');
+                } catch (emailError) {
+                    console.error('Error sending email:', emailError);
+                    alert('Registration successful, but failed to send welcome email.');
+                }
 
-                alert("Registration successful!");
                 this.$router.push('/');
             } catch (error) {
                 console.error("Error during registration: ", error);
 
                 if (error.code === 'auth/email-already-in-use') {
                     alert("This email is already in use. Please use another email.");
+                } else if (error.code === 'auth/weak-password') {
+                    alert("The password is too weak. Please choose a stronger password.");
                 } else {
                     alert("Registration failed. Please try again.");
                 }
             }
         }
+
     }
 };
 </script>

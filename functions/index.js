@@ -1,37 +1,45 @@
-const functions = require('firebase-functions')
+const { onRequest } = require('firebase-functions/v2/https')
 const admin = require('firebase-admin')
+const cors = require('cors')({ origin: true })
 const sgMail = require('@sendgrid/mail')
+const functions = require('firebase-functions')
 
+// Initialize Firebase Admin SDK
 admin.initializeApp()
 
-// get SendGrid API Key from firebase config
-const sendGridApiKey = functions.config().sendgrid.api_key
-sgMail.setApiKey(sendGridApiKey)
+sgMail.setApiKey(functions.config().sendgrid.apikey)
 
-// specify the region where the function will be deployed
-exports.sendEmailWithAttachment = functions.https.onCall(async (data, context) => {
-  const { to, subject, text, attachmentContent, attachmentFileName } = data
+// Function to send an email
+exports.sendEmail = onRequest((req, res) => {
+  cors(req, res, async () => {
+    try {
+      const { to, subject, text } = req.body
 
-  const msg = {
-    to: to,
-    from: 'iscfen@gmail.com',
-    subject: subject,
-    text: text,
-    attachments: [
-      {
-        content: attachmentContent,
-        filename: attachmentFileName,
-        type: 'application/pdf',
-        disposition: 'attachment'
+      if (!to || !subject || !text) {
+        return res.status(400).send('Missing required fields')
       }
-    ]
-  }
 
-  try {
-    await sgMail.send(msg)
-    return { success: true }
-  } catch (error) {
-    console.error('Error sending email:', error)
-    return { success: false, error: error.message }
-  }
+      const msg = {
+        to,
+        from,
+        subject,
+        text,
+        html: `<strong>${text}</strong>`,
+        attachments: [
+          {
+            content: attachmentContent,
+            filename: attachmentFileName,
+            type: 'application/pdf',
+            disposition: 'attachment'
+          }
+        ]
+      }
+
+      await sgMail.send(msg)
+      res.status(200).send('Email sent successfully')
+    } catch (error) {
+      console.error('Error sending email:', error.message)
+      res.status(500).send('Error sending email')
+    }
+  })
 })
