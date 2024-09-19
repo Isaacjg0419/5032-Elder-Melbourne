@@ -1,6 +1,6 @@
 const { onRequest } = require('firebase-functions/v2/https')
 const admin = require('firebase-admin')
-const cors = require('cors')({ origin: true })
+const cors = require('cors')
 const sgMail = require('@sendgrid/mail')
 const functions = require('firebase-functions')
 
@@ -9,9 +9,16 @@ admin.initializeApp()
 
 sgMail.setApiKey(functions.config().sendgrid.apikey)
 
+// Create CORS middleware with options
+const corsOptions = {
+  origin: true // Allows all origins
+}
+
+const corsMiddleware = cors(corsOptions)
+
 // Function to send an email
 exports.sendEmail = onRequest((req, res) => {
-  cors(req, res, async () => {
+  corsMiddleware(req, res, async () => {
     try {
       const { to, subject, text } = req.body
 
@@ -21,18 +28,18 @@ exports.sendEmail = onRequest((req, res) => {
 
       const msg = {
         to,
-        from,
+        from: 'jfen0016@student.monash.edu',
         subject,
         text,
-        html: `<strong>${text}</strong>`,
-        attachments: [
-          {
-            content: attachmentContent,
-            filename: attachmentFileName,
-            type: 'application/pdf',
-            disposition: 'attachment'
-          }
-        ]
+        html: `<strong>${text}</strong>`
+        // attachments: [
+        //   {
+        //     content: attachmentContent,
+        //     filename: attachmentFileName,
+        //     type: 'application/pdf',
+        //     disposition: 'attachment'
+        //   }
+        // ]
       }
 
       await sgMail.send(msg)

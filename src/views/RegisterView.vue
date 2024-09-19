@@ -195,8 +195,8 @@ export default {
                         to: sanitizedEmail,
                         subject: 'Welcome to Elder Melbourne',
                         text: `Hello ${sanitizedEmail},\n\nWelcome to Elder Melbourne Community! We are glad to have you on board.\n\nBest regards,\nTeam`,
-                        attachmentContent: pdfBase64,
-                        attachmentFileName: 'welcome_user_utf8.pdf'
+                        // attachmentContent: pdfBase64,
+                        // attachmentFileName: 'welcome_user_utf8.pdf'
                     });
                     console.log("Email with attachment sent successfully");
                     alert('Registration successful and email sent!');
