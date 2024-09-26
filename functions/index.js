@@ -3,17 +3,14 @@ const logger = require('firebase-functions/logger')
 const sgMail = require('@sendgrid/mail')
 const cors = require('cors')
 
-// 使用 CORS 中间件
 const corsOptions = {
-  origin: 'https://db-67c2b.web.app', // 允许的源
-  optionsSuccessStatus: 200 // 对于旧版浏览器
+  origin: 'https://db-67c2b.web.app',
+  methods: ['POST', 'OPTIONS']
 }
-//
 // sgMail.setApiKey('your api key')
 
 exports.sendGridEmail = onRequest(cors(corsOptions), async (req, res) => {
   if (req.method === 'OPTIONS') {
-    // 处理预检请求
     res.setHeader('Access-Control-Allow-Origin', corsOptions.origin)
     res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS')
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type')

@@ -211,7 +211,7 @@ export default {
                     throw new Error("Failed to load welcome document");
                 }
 
-                const response = await axios.post('https://sendgridemail-lx42yvfdtq-uc.a.run.app/sendGridEmail', {
+                const response = await axios.post('/sendEmail', {
                     subject: 'Welcome to Elder Melbourne',
                     text: `Hello ${to},\n\nWelcome to Elder Melbourne Community! We are glad to have you on board.\n\nBest regards,\nTeam`,
                     html: `

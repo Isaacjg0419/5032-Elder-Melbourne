@@ -19,7 +19,7 @@
         "destination": "/index.html"
       },
       {
-        "source": "/sendGridEmail",
+        "source": "/sendEmail",
         "function": "sendGridEmail"
       }
     ]
