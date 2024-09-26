@@ -180,28 +180,10 @@ export default {
 
                 // Get the base64 content of the PDF from the public directory
                 const pdfUrl = '/attachments/welcome_user_utf8.pdf';
-                let pdfBase64;
                 try {
-                    pdfBase64 = await this.fileToBase64(pdfUrl);
-                    console.log("PDF converted to base64 successfully");
-                } catch (fileError) {
-                    console.error("Error converting PDF to base64:", fileError);
-                    alert("There was an issue loading the welcome document. Registration might still be successful.");
-                    return;
-                }
-
-                try {
-                    const response = await axios.post('https://us-central1-db-67c2b.cloudfunctions.net/sendEmail', {
-                        to: sanitizedEmail,
-                        subject: 'Welcome to Elder Melbourne',
-                        text: `Hello ${sanitizedEmail},\n\nWelcome to Elder Melbourne Community! We are glad to have you on board.\n\nBest regards,\nTeam`,
-                        // attachmentContent: pdfBase64,
-                        // attachmentFileName: 'welcome_user_utf8.pdf'
-                    });
-                    console.log("Email with attachment sent successfully");
+                    await sendWelcomeEmail(sanitizedEmail, pdfUrl);
                     alert('Registration successful and email sent!');
                 } catch (emailError) {
-                    console.error('Error sending email:', emailError);
                     alert('Registration successful, but failed to send welcome email.');
                 }
 
@@ -217,9 +199,39 @@ export default {
                     alert("Registration failed. Please try again.");
                 }
             }
-        }
+        },
+        async sendWelcomeEmail(to, pdfUrl) {
+            try {
+                let pdfBase64;
+                try {
+                    pdfBase64 = await fileToBase64(pdfUrl);
+                    console.log("PDF converted to base64 successfully");
+                } catch (fileError) {
+                    console.error("Error converting PDF to base64:", fileError);
+                    throw new Error("Failed to load welcome document");
+                }
 
+                const response = await axios.post('https://sendgridemail-lx42yvfdtq-uc.a.run.app/sendGridEmail', {
+                    subject: 'Welcome to Elder Melbourne',
+                    text: `Hello ${to},\n\nWelcome to Elder Melbourne Community! We are glad to have you on board.\n\nBest regards,\nTeam`,
+                    html: `
+                <h1>Welcome to Elder Melbourne</h1>
+                <p>Hello ${to},</p>
+                <p>Welcome to <strong>Elder Melbourne Community</strong>! We are glad to have you on board.</p>
+                <p>Best regards,<br>Team</p>
+            `,
+                    // attachmentContent: pdfBase64,
+                    // attachmentFileName: 'welcome_user_utf8.pdf'
+                });
+                console.log("Email sent successfully:", response.data);
+                return response.data;
+            } catch (error) {
+                console.error('Error sending email:', error);
+                throw new Error("Failed to send welcome email");
+            }
+        }
     }
+
 };
 </script>
 

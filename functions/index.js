@@ -1,19 +1,48 @@
-/**
- * Import function triggers from their respective submodules:
- *
- * const {onCall} = require("firebase-functions/v2/https");
- * const {onDocumentWritten} = require("firebase-functions/v2/firestore");
- *
- * See a full list of supported triggers at https://firebase.google.com/docs/functions
- */
+const { onRequest } = require('firebase-functions/v2/https')
+const logger = require('firebase-functions/logger')
+const sgMail = require('@sendgrid/mail')
+const cors = require('cors')
 
-const {onRequest} = require("firebase-functions/v2/https");
-const logger = require("firebase-functions/logger");
+// 使用 CORS 中间件
+const corsOptions = {
+  origin: 'https://db-67c2b.web.app', // 允许的源
+  optionsSuccessStatus: 200 // 对于旧版浏览器
+}
+//
+// sgMail.setApiKey('your api key')
 
-// Create and deploy your first functions
-// https://firebase.google.com/docs/functions/get-started
+exports.sendGridEmail = onRequest(cors(corsOptions), async (req, res) => {
+  if (req.method === 'OPTIONS') {
+    // 处理预检请求
+    res.setHeader('Access-Control-Allow-Origin', corsOptions.origin)
+    res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS')
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type')
+    return res.status(204).send('Preflight request successful')
+  }
 
-// exports.helloWorld = onRequest((request, response) => {
-//   logger.info("Hello logs!", {structuredData: true});
-//   response.send("Hello from Firebase!");
-// });
+  if (req.method !== 'POST') {
+    return res.status(405).send('Method Not Allowed')
+  }
+
+  const { to, from, subject, text, html } = req.body
+
+  const msg = {
+    to: to || 'iscfen9@gmail.com',
+    from: from || 'iscfen@gmail.com',
+    subject: subject || 'Sending with SendGrid is Fun',
+    text: text || 'and easy to do anywhere, even with Node.js',
+    html: html || '<strong>and easy to do anywhere, even with Node.js</strong>'
+  }
+
+  try {
+    await sgMail.send(msg)
+    logger.info('Email sent successfully')
+    return res.status(200).send('Email sent successfully')
+  } catch (error) {
+    logger.error('Error sending email:', error)
+    if (error.response) {
+      logger.error('Response:', error.response.body)
+    }
+    return res.status(500).send('Failed to send email')
+  }
+})
