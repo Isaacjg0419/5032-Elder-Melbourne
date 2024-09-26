@@ -15,12 +15,12 @@
     "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
     "rewrites": [
       {
-        "source": "**",
-        "destination": "/index.html"
-      },
-      {
         "source": "/sendEmail",
         "function": "sendGridEmail"
+      },
+      {
+        "source": "**",
+        "destination": "/index.html"
       }
     ]
   }
