@@ -130,9 +130,21 @@ export default {
                 const querySnapshot = await getDocs(roleQuery);
 
                 if (!querySnapshot.empty) {
+                    const userDoc = querySnapshot.docs[0];
+                    const userData = userDoc.data();
+
+                    const userName = userData.firstName || "Unknown User";
+
+                    const userInfo = {
+                        email: this.email,
+                        role: this.role,
+                        name: userName
+                    };
+                    localStorage.setItem('user', JSON.stringify(userInfo));
+
                     alert("Login successful!");
 
-                    // Redirect based on role
+
                     if (this.role === "admin") {
                         this.$router.push('/admin-dashboard');
                     } else {

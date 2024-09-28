@@ -7,7 +7,6 @@
         </button>
         <div class="collapse navbar-collapse justify-content-center" id="navbarNav">
             <ul class="navbar-nav">
-                <!-- navbar to complete the support currently, other pages TODO later -->
                 <li class="nav-item">
                     <router-link :class="{ 'active-link': isActive('/user-home') }" class="nav-link"
                         to="/user-home">Program and Events</router-link>
@@ -20,26 +19,43 @@
                     <router-link :class="{ 'active-link': isActive('/user-home') }" class="nav-link"
                         to="/user-home">Neighborhood Centers</router-link>
                 </li>
-                <li class="nav-item">
-                    <router-link :class="{ 'active-link': isActive('/login') }" class="nav-link" to="/login"><i
-                            class="bi bi-lock"></i></router-link>
-                </li>
             </ul>
         </div>
-        <div class="login d-none d-lg-block">
-            <router-link :class="{ 'active-link': isActive('/') }" class="nav-link" to="/">Login</router-link>
+        <div v-if="user" class="user-info">
+            <span>Hi, {{ user.name }}</span>
+            <button @click="logout" class="btn btn-danger">Logout</button>
+        </div>
+        <div v-else class="login">
+            <router-link :class="{ 'active-link': isActive('/login') }" class="nav-link" to="/login">Login</router-link>
         </div>
     </nav>
-    <!-- TODO,login as the profile logo,can be logout after login -->
 </template>
 
 <script setup>
-import { useRoute } from 'vue-router'
+import { ref, onMounted } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 
 const route = useRoute()
+const router = useRouter()
+const user = ref(null)
 
 const isActive = (path) => {
     return route.path === path
+}
+
+
+onMounted(() => {
+    const userInfo = localStorage.getItem('user')
+    if (userInfo) {
+        user.value = JSON.parse(userInfo)
+    }
+})
+
+
+const logout = () => {
+    localStorage.removeItem('user')
+    user.value = null
+    router.push('/')
 }
 </script>
 
@@ -51,16 +67,11 @@ body {
     height: 100%;
 }
 
-/* relative position for global navbar  */
 .navbar {
     margin: 0;
     width: 100vw;
     padding: 2rem;
     position: relative;
-}
-
-.container {
-    margin-top: 0;
 }
 
 .navbar-nav {
@@ -82,6 +93,20 @@ body {
 .active-link {
     color: #007bff;
     font-weight: bold;
+}
+
+.user-info {
+    color: white;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.user-info button {
+    background-color: #dc3545;
+    border: none;
+    padding: 0.5rem 1rem;
+    cursor: pointer;
 }
 
 .login .nav-link {
