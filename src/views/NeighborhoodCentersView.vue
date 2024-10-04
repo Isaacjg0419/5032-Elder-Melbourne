@@ -36,10 +36,20 @@
         </table>
 
         <!-- Google Map -->
-        <GoogleMap api-key="AIzaSyDaEyQ5hYpaWNvWFWMPo-7vYYt3_Fb9iRE" style="width: 100%; height: 400px"
-            :center="mapCenter" :zoom="zoomLevel">
+        <GoogleMap api-key="AIzaSyDaEyQ5hYpaWNvWFWMPo-7vYYt3_Fb9iRE" map-id="26be0c5b828394f8"
+            style="width: 100%; height: 400px" :center="mapCenter" :zoom="zoomLevel">
             <AdvancedMarker v-for="(marker, index) in markers" :key="index" :options="marker.options"
-                @click="handleMarkerClick(marker)" />
+                @click="handleMarkerClick(marker, centers[index])">
+                <InfoWindow v-if="selectedCenter && selectedCenter.id === centers[index].id"
+                    :position="selectedCenter.position" @closeclick="handleInfoWindowClose">
+                    <div>
+                        <p>{{ selectedCenter.name }}</p>
+                        <p>{{ selectedCenter.address }}</p>
+                        <p>{{ selectedCenter.phone }}</p>
+                        <button @click="navigateTo(selectedCenter.address)">Navigate</button>
+                    </div>
+                </InfoWindow>
+            </AdvancedMarker>
         </GoogleMap>
     </div>
 </template>
@@ -47,17 +57,18 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import Navbar from '../components/NavBar.vue';
-import { db } from '../data/firebase.js'; // 导入 Firestore 数据库
+import { db } from '../data/firebase.js';
 import { collection, getDocs } from "firebase/firestore";
 import neighborhoodImage from '@/assets/neighborhood.jpg';
-import { GoogleMap, AdvancedMarker } from 'vue3-google-map'; // 导入 GoogleMap 和 AdvancedMarker 组件
+import { GoogleMap, AdvancedMarker, InfoWindow } from 'vue3-google-map';
 
-const centers = ref([]); // 用于存储老年服务中心数据
-const mapCenter = { lat: -37.8136, lng: 144.9631 }; // 地图中心点
-const zoomLevel = 12; // 地图缩放级别
-const markers = ref([]); // 用于存储标记数据
+const centers = ref([]);
+const mapCenter = { lat: -37.8136, lng: 144.9631 };
+const zoomLevel = 12;
+const markers = ref([]);
+const selectedCenter = ref(null);
 
-// 从 Firestore 获取数据
+
 async function fetchCenters() {
     try {
         const centerCollection = collection(db, "agedCareCenters");
@@ -67,30 +78,38 @@ async function fetchCenters() {
             ...doc.data()
         }));
 
-        // 设置标记数组
-        markers.value = centers.value.map(center => ({
-            options: {
-                position: { lat: center.latitude, lng: center.longitude }, // 确保这些字段在 Firestore 中存在
-                title: center.name, // 提示框内容
-                label: {
-                    text: center.name,
-                    color: '#ffffff', // 标签颜色
-                    fontSize: '16px',
+        markers.value = centers.value
+            .filter(center => center.latitude && center.longitude)
+            .map(center => ({
+                options: {
+                    position: { lat: center.latitude, lng: center.longitude },
+                    title: center.name,
                 },
-                // 其他 AdvancedMarker 选项可以在这里添加
-            },
-        }));
+            }));
     } catch (error) {
-        console.error("获取老年服务中心数据时出错: ", error);
+        console.error("get centers errors ", error);
     }
 }
 
-// 点击标记时打印标记信息
-function handleMarkerClick(marker) {
-    console.log('Marker clicked:', marker);
+function handleMarkerClick(marker, center) {
+    selectedCenter.value = {
+        ...center,
+        position: marker.options.position
+    };
 }
 
-// 在组件挂载后调用 fetchCenters
+
+function handleInfoWindowClose() {
+    selectedCenter.value = null;
+}
+
+// navigate to
+function navigateTo(address) {
+    const url = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(address)}`;
+    window.open(url, '_blank');
+}
+
+
 onMounted(() => {
     fetchCenters();
 });
