@@ -4,6 +4,7 @@ import RegisterView from '../views/RegisterView.vue'
 import HomeView from '../views/HomeView.vue'
 import SupportView from '../views/SupportView.vue'
 import AdminDashboardView from '@/views/AdminDashboardView.vue'
+import NeighborhoodCentersView from '@/views/NeighborhoodCentersView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -32,6 +33,11 @@ const router = createRouter({
       path: '/admin-dashboard',
       name: 'AdminDashboard',
       component: AdminDashboardView
+    },
+    {
+      path: '/neighborhood-centers',
+      name: 'neighborhood',
+      component: NeighborhoodCentersView
     }
   ]
 })
