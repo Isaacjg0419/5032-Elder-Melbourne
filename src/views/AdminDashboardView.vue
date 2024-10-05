@@ -42,11 +42,11 @@ export default {
                 email: '',
                 age: '',
             },
-            currentPage: 1, // Current page for pagination
-            pageSize: 10, // Number of rows per page
+            currentPage: 1,
+            pageSize: 10,
             sortOrder: {
-                prop: 'firstName', // Default sort property
-                order: 'ascending', // Default sort order
+                prop: 'firstName',
+                order: 'ascending',
             },
         };
     },
@@ -106,23 +106,21 @@ export default {
             const userSnapshot = await getDocs(userCollection);
             // Map fetched data to the users array
             this.users = userSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-            console.log(this.users); // Log the users to verify data structure
+            console.log(this.users);
         },
         // Update the current page on pagination change
         handlePageChange(newPage) {
             this.currentPage = newPage;
         },
-        // Update sort order based on user interaction
+
         handleSortChange({ prop, order }) {
             this.sortOrder = { prop, order };
         },
     },
     mounted() {
-        this.fetchUsers(); // Fetch users when component is mounted
+        this.fetchUsers();
     },
 };
 </script>
 
-<style scoped>
-/* Add any scoped styles here */
-</style>
+<style scoped></style>
