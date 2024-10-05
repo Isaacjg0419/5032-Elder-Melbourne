@@ -16,8 +16,8 @@
                         to="/support-services">Support and Services</router-link>
                 </li>
                 <li class="nav-item">
-                    <router-link :class="{ 'active-link': isActive('/user-home') }" class="nav-link"
-                        to="/user-home">Neighborhood Centers</router-link>
+                    <router-link :class="{ 'active-link': isActive('/neighborhood-centers') }" class="nav-link"
+                        to="/neighborhood-centers">Neighborhood Centers</router-link>
                 </li>
             </ul>
         </div>

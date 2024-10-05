@@ -13,7 +13,8 @@
                     </p>
                 </div>
                 <div class="col-12 col-lg-6">
-                    <img :src="supportsImage" alt="supports here" class="responsive-image">
+                    <img :src="supportsImage" alt="An image showing support services available for older adults"
+                        class="responsive-image">
                 </div>
             </div>
         </div>
@@ -21,11 +22,14 @@
             <h2>Common FAQs</h2>
             <div class="faqs-container">
                 <div v-for="(faq, index) in faqList" :key="index" class="faqs-list">
-                    <div class="faqs-title" @click="toggleFaq(index)" :class="{ active: expandedFaqs[index] }">
+                    <div class="faqs-title" @click="toggleFaq(index)" :aria-expanded="expandedFaqs[index]"
+                        :id="'faq-title-' + index" :class="{ active: expandedFaqs[index] }" tabindex="0"
+                        @keydown.enter="toggleFaq(index)" @keydown.space="toggleFaq(index)">
                         <span>{{ faq.question }}</span>
                         <span class="arrow" :class="{ open: expandedFaqs[index] }">▼</span>
                     </div>
-                    <p v-show="expandedFaqs[index]" class="faqs-text">{{ faq.answer }}</p>
+                    <p v-show="expandedFaqs[index]" :aria-labelledby="'faq-title-' + index" class="faqs-text">{{
+                        faq.answer }}</p>
                     <div v-show="expandedFaqs[index]" class="rating-section">
                         <div class="row" style="margin-right: 2rem;">
                             <div class="col-12">
@@ -44,13 +48,14 @@
                                     <button v-for="rating in [1, 2, 3, 4, 5]" :key="rating"
                                         :class="{ 'btn-primary': userRating[index] === rating, 'btn-outline-secondary': userRating[index] !== rating }"
                                         class="btn mx-1" @click="rateFaq(index, rating)"
-                                        :disabled="showThankYou[index] && userRating[index] !== rating">
+                                        :disabled="showThankYou[index] && userRating[index] !== rating"
+                                        :aria-label="'Rate this FAQ ' + rating + ' stars'" tabindex="0">
                                         {{ rating }}
                                     </button>
                                 </div>
                             </div>
                             <div class="col-12 col-md-4 text-start text-md-end" v-if="showThankYou[index]">
-                                <div class="thank-you-message">
+                                <div class="thank-you-message" aria-live="polite">
                                     Thank you for your rating!
                                 </div>
                             </div>
@@ -68,14 +73,12 @@ import { ref, onMounted } from 'vue';
 import { db } from '@/data/firebase';
 import { doc, getDoc, getDocs, collection, updateDoc } from 'firebase/firestore';
 import supportsImage from '@/assets/services-supports.jpg';
-// import faqsData from '@/data/common-faqs.json';
 
 const faqList = ref([]);
 const expandedFaqs = ref([]);
 const faqRatings = ref([]);
 const userRating = ref([]);
 const showThankYou = ref([]);
-
 
 const toggleFaq = (index) => {
     expandedFaqs.value[index] = !expandedFaqs.value[index];
@@ -119,7 +122,6 @@ const fetchFaqRatings = async () => {
         console.error('Error fetching FAQ ratings:', error);
     }
 };
-
 
 const rateFaq = async (index, rating) => {
     try {
@@ -167,15 +169,10 @@ const rateFaq = async (index, rating) => {
     }
 };
 
-
-
-
 onMounted(() => {
     fetchFaqRatings();
 });
 </script>
-
-
 
 <style scoped>
 .introduction-section {
@@ -264,5 +261,9 @@ onMounted(() => {
     margin-top: 1rem;
     font-size: 1rem;
     color: #28a745;
+}
+
+.arrow.open {
+    transform: rotate(180deg);
 }
 </style>

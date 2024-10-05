@@ -1,31 +1,36 @@
 <template>
   <div>
     <Navbar />
-    <!--introduction section  -->
-    <div class="introduction-section">
-      <div class="row">
-        <div class="col-12 col-lg-6">
-          <h1>Elder Community Introduction</h1>
-          <p class="introduction-text">
-            The City of Melbourne offers a range of programs and<br>
-            services to support older people to remain active, independent and living at home.​
-          </p>
+    <!-- Main content section -->
+    <main aria-label="Elder Community Introduction and Explore Section">
+      <!-- Introduction section -->
+      <section class="introduction-section" aria-labelledby="introduction-title">
+        <div class="row">
+          <div class="col-12 col-lg-6">
+            <h1 id="introduction-title">Elder Community Introduction</h1>
+            <p class="introduction-text">
+              The City of Melbourne offers a range of programs and<br />
+              services to support older people to remain active, independent and living at home.​
+            </p>
+          </div>
+          <div class="col-12 col-lg-6">
+            <img :src="oldPeopleImage" alt="Older people engaging in activities" class="responsive-image" />
+          </div>
         </div>
-        <div class="col-12 col-lg-6">
-          <img :src="oldPeopleImage" alt="old-people here" class="responsive-image">
+      </section>
+
+      <!-- Explore section -->
+      <section class="explore-section" aria-labelledby="explore-title">
+        <h2 id="explore-title">Explore</h2>
+        <div class="card-container">
+          <router-link v-for="(card, index) in cardData" :key="index" :to="card.link" class="card"
+            :aria-label="card.text">
+            <img :src="imageMap[card.image]" :alt="card.title" class="card-image" />
+            <p class="card-text">{{ card.text }}</p>
+          </router-link>
         </div>
-      </div>
-    </div>
-    <!--introduction section  -->
-    <div class="explore-section">
-      <h2>Explore</h2>
-      <div class="card-container">
-        <router-link v-for="(card, index) in cardData" :key="index" :to="card.link" class="card">
-          <img :src="imageMap[card.image]" :alt="card.title" class="card-image" />
-          <p class="card-text">{{ card.text }}</p>
-        </router-link>
-      </div>
-    </div>
+      </section>
+    </main>
   </div>
 </template>
 
@@ -35,18 +40,14 @@ import oldPeople from '@/assets/older-people.jpg';
 import Navbar from '../components/NavBar.vue';
 import cardsData from '@/data/explore-cards.json';
 
+// Image imports and data
 const imageFiles = import.meta.glob('@/assets/*.jpg', { eager: true });
 const oldPeopleImage = oldPeople;
-// ref to hold card data
 const cardData = ref([]);
-//ref to hold a map of image paths to their imported images
 const imageMap = ref({});
 
-// onMounted lifecycle hook to identify the cardData for explore section
 onMounted(() => {
   cardData.value = cardsData;
-  // identify a map of image filenames to imported image URLs:
-  // extract the filename,then map the filename to the imported image URL
   imageMap.value = Object.keys(imageFiles).reduce((map, path) => {
     const key = path.split('/').pop();
     map[key] = imageFiles[path].default;
@@ -54,6 +55,7 @@ onMounted(() => {
   }, {});
 });
 </script>
+
 <style scoped>
 .introduction-section {
   margin-top: 20px;

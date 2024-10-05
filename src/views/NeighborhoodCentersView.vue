@@ -11,59 +11,66 @@
                     </p>
                 </div>
                 <div class="col-12 col-lg-6">
-                    <img :src="neighborhoodImage" alt="neighborhoodImage here" class="responsive-image">
+                    <img :src="neighborhoodImage"
+                        alt="Image of a neighborhood center offering social and recreational activities for older adults"
+                        class="responsive-image">
                 </div>
             </div>
         </div>
+        <div class="table-section">
+            <!-- Aged Care Centers Table -->
+            <h2>Aged Care Centers</h2>
+            <table class="table" role="table">
+                <thead>
+                    <tr>
+                        <th scope="col">Name</th>
+                        <th scope="col">Address</th>
+                        <th scope="col">Phone</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr v-for="(center, index) in centers" :key="index">
+                        <td>{{ center.name }}</td>
+                        <td>{{ center.address }}</td>
+                        <td>{{ center.phone }}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        <div class="map-section">
+            <!-- Google Map -->
+            <GoogleMap api-key="AIzaSyDaEyQ5hYpaWNvWFWMPo-7vYYt3_Fb9iRE" map-id="26be0c5b828394f8"
+                style="width: 100%; height: 400px" :center="mapCenter" :zoom="zoomLevel">
+                <AdvancedMarker v-for="(marker, index) in markers" :key="index" :options="marker.options"
+                    @click="handleMarkerClick(marker, centers[index])">
+                    <InfoWindow v-if="selectedCenter && selectedCenter.id === centers[index].id"
+                        :position="selectedCenter.position" @closeclick="handleInfoWindowClose">
+                        <div>
+                            <p>{{ selectedCenter.name }}</p>
+                            <p>{{ selectedCenter.address }}</p>
+                            <p>{{ selectedCenter.phone }}</p>
+                            <!-- Trip Info Input -->
+                            <input v-model="startLocation" placeholder="Enter starting location"
+                                aria-label="Enter your starting location" />
+                            <button @click="getTripInfo(selectedCenter.address)" aria-label="Get trip information">Get
+                                Trip
+                                Info</button>
 
-        <!-- Aged Care Centers Table -->
-        <h2>Aged Care Centers</h2>
-        <table class="table">
-            <thead>
-                <tr>
-                    <th>Name</th>
-                    <th>Address</th>
-                    <th>Phone</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr v-for="(center, index) in centers" :key="index">
-                    <td>{{ center.name }}</td>
-                    <td>{{ center.address }}</td>
-                    <td>{{ center.phone }}</td>
-                </tr>
-            </tbody>
-        </table>
-
-        <!-- Google Map -->
-        <GoogleMap api-key="AIzaSyDaEyQ5hYpaWNvWFWMPo-7vYYt3_Fb9iRE" map-id="26be0c5b828394f8"
-            style="width: 100%; height: 400px" :center="mapCenter" :zoom="zoomLevel">
-            <AdvancedMarker v-for="(marker, index) in markers" :key="index" :options="marker.options"
-                @click="handleMarkerClick(marker, centers[index])">
-                <InfoWindow v-if="selectedCenter && selectedCenter.id === centers[index].id"
-                    :position="selectedCenter.position" @closeclick="handleInfoWindowClose">
-                    <div>
-                        <p>{{ selectedCenter.name }}</p>
-                        <p>{{ selectedCenter.address }}</p>
-                        <p>{{ selectedCenter.phone }}</p>
-
-                        <!-- Trip Info Input -->
-                        <input v-model="startLocation" placeholder="Enter starting location" />
-                        <button @click="getTripInfo(selectedCenter.address)">Get Trip Info</button>
-
-                        <div v-if="tripInfo">
-                            <h3>Trip Details</h3>
-                            <p>Distance: {{ tripInfo.distance }}</p>
-                            <p>Duration: {{ tripInfo.duration }}</p>
-                            <p>Route: {{ tripInfo.route }}</p>
+                            <div v-if="tripInfo">
+                                <h3>Trip Details</h3>
+                                <p>Distance: {{ tripInfo.distance }}</p>
+                                <p>Duration: {{ tripInfo.duration }}</p>
+                                <p>Route: {{ tripInfo.route }}</p>
+                            </div>
+                            <!-- Navigate Button -->
+                            <button @click="navigateTo(selectedCenter.address)"
+                                aria-label="Navigate to selected center">Navigate</button>
                         </div>
+                    </InfoWindow>
+                </AdvancedMarker>
+            </GoogleMap>
+        </div>
 
-                        <button @click="navigateTo(selectedCenter.address)">Navigate</button>
-                    </div>
-                </InfoWindow>
-
-            </AdvancedMarker>
-        </GoogleMap>
     </div>
 </template>
 
@@ -110,7 +117,7 @@ function handleMarkerClick(marker, center) {
         ...center,
         position: marker.options.position
     };
-    // 清空 tripInfo
+    // refresh trip info
     tripInfo.value = null;
 }
 
@@ -118,7 +125,7 @@ function handleInfoWindowClose() {
     selectedCenter.value = null;
 }
 
-// 获取行程信息
+// get trip info
 async function getTripInfo(destination) {
     if (!startLocation.value) return;
 
@@ -133,17 +140,16 @@ async function getTripInfo(destination) {
         if (status === google.maps.DirectionsStatus.OK) {
             const route = result.routes[0];
             tripInfo.value = {
-                distance: route.legs[0].distance.text, // 获取距离
-                duration: route.legs[0].duration.text, // 获取持续时间
-                // 处理路线指示
+                distance: route.legs[0].distance.text,
+                duration: route.legs[0].duration.text,
+                //route response parse the HTML 
                 route: route.legs[0].steps.map(step => {
-                    // 获取每个步骤的指示，移除不必要的 HTML 标签
                     return step.instructions
-                        .replace(/<\/?b>/g, '')        // 移除 <b> 和 </b> 标签
-                        .replace(/<\/?wbr>/g, '')      // 移除 <wbr> 标签
-                        .replace(/<[^>]*>/g, '')       // 移除所有其他 HTML 标签
-                        .trim();                       // 去除首尾空格
-                }).join(", "), // 将步骤合并为一个字符串
+                        .replace(/<\/?b>/g, '')
+                        .replace(/<\/?wbr>/g, '')
+                        .replace(/<[^>]*>/g, '')
+                        .trim();
+                }).join(", "),
             };
         } else {
             console.error('Error fetching directions:', status);
@@ -189,20 +195,63 @@ onMounted(() => {
     object-fit: cover;
 }
 
+
+@media (min-width: 992px) {
+    .introduction-section {
+        flex-direction: row;
+    }
+
+    .introduction-section h1 {
+        font-size: 2.5rem;
+    }
+
+    .introduction-text p {
+        font-size: 1.25rem;
+    }
+}
+
+@media (max-width: 768px) {
+    .introduction-section {
+        flex-direction: column;
+        text-align: center;
+    }
+
+    .introduction-text {
+        margin: 0;
+        padding: 10px;
+        max-width: none;
+    }
+
+    .responsive-image {
+        margin: 0;
+        width: 100%;
+    }
+
+}
+
+.table-section,
+.map-section {
+    margin-left: 20px;
+    margin-right: 20px;
+    margin-bottom: 40px;
+}
+
 .table {
     width: 100%;
     border-collapse: collapse;
     margin-top: 20px;
 }
 
-.table th,
-.table td {
-    border: 1px solid #ddd;
-    padding: 8px;
-    text-align: left;
+.table th {
+    background-color: #4a4a4a;
+    color: #ffffff;
 }
 
-.table th {
-    background-color: #f2f2f2;
+.table td {
+    color: #333333;
+}
+
+GoogleMap {
+    margin-top: 40px;
 }
 </style>
