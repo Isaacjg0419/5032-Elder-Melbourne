@@ -4,7 +4,13 @@
             <h1>Admin Dashboard</h1>
         </el-header>
         <el-main>
-            <el-input v-model="searchQuery" placeholder="Search by name or email" style="margin-bottom: 20px;" />
+            <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+                <el-input v-model="filters.firstName" placeholder="Search by First Name" />
+                <el-input v-model="filters.lastName" placeholder="Search by Last Name" />
+                <el-input v-model="filters.email" placeholder="Search by Email" />
+                <el-input v-model="filters.age" placeholder="Search by Age" />
+            </div>
+
             <el-table :data="filteredUsers" style="width: 100%"
                 :default-sort="{ prop: 'firstName', order: 'ascending' }" @sort-change="handleSortChange">
                 <el-table-column prop="firstName" label="First Name" sortable />
@@ -29,36 +35,68 @@ export default {
     name: 'AdminDashboardView',
     data() {
         return {
-            users: [],
-            searchQuery: '',
-            currentPage: 1,
-            pageSize: 10,
+            users: [], // Store user data
+            filters: {
+                firstName: '',
+                lastName: '',
+                email: '',
+                age: '',
+            },
+            currentPage: 1, // Current page for pagination
+            pageSize: 10, // Number of rows per page
+            sortOrder: {
+                prop: 'firstName', // Default sort property
+                order: 'ascending', // Default sort order
+            },
         };
     },
     computed: {
         filteredUsers() {
+            // Filter users based on search inputs
+            const filteredData = this.users.filter(user => {
+                const firstName = user.firstName?.toLowerCase() || ''; // Use optional chaining
+                const lastName = user.lastName?.toLowerCase() || '';
+                const email = user.email?.toLowerCase() || '';
+                const age = user.age?.toString() || '';
+
+                return (
+                    firstName.includes(this.filters.firstName.toLowerCase()) &&
+                    lastName.includes(this.filters.lastName.toLowerCase()) &&
+                    email.includes(this.filters.email.toLowerCase()) &&
+                    age.includes(this.filters.age.toLowerCase())
+                );
+            });
+
+            // Sort filtered data
+            filteredData.sort((a, b) => {
+                const prop = this.sortOrder.prop;
+                if (this.sortOrder.order === 'ascending') {
+                    return a[prop] > b[prop] ? 1 : -1;
+                } else if (this.sortOrder.order === 'descending') {
+                    return a[prop] < b[prop] ? 1 : -1;
+                }
+                return 0;
+            });
+
+            // Paginate data
             const start = (this.currentPage - 1) * this.pageSize;
             const end = start + this.pageSize;
-
-            return this.users
-                .filter(user => {
-                    const firstName = user.firstName || '';
-                    const lastName = user.lastName || '';
-                    const email = user.email || '';
-                    return firstName.toLowerCase().includes(this.searchQuery.toLowerCase()) ||
-                        lastName.toLowerCase().includes(this.searchQuery.toLowerCase()) ||
-                        email.toLowerCase().includes(this.searchQuery.toLowerCase());
-                })
-                .slice(start, end);
+            return filteredData.slice(start, end);
         },
         totalUsers() {
+            // Calculate total number of users after filtering
             return this.users.filter(user => {
-                const firstName = user.firstName || '';
-                const lastName = user.lastName || '';
-                const email = user.email || '';
-                return firstName.toLowerCase().includes(this.searchQuery.toLowerCase()) ||
-                    lastName.toLowerCase().includes(this.searchQuery.toLowerCase()) ||
-                    email.toLowerCase().includes(this.searchQuery.toLowerCase());
+                const firstName = user.firstName?.toLowerCase() || '';
+                const lastName = user.lastName?.toLowerCase() || '';
+                const email = user.email?.toLowerCase() || '';
+                const age = user.age?.toString() || '';
+
+                return (
+                    firstName.includes(this.filters.firstName.toLowerCase()) &&
+                    lastName.includes(this.filters.lastName.toLowerCase()) &&
+                    email.includes(this.filters.email.toLowerCase()) &&
+                    age.includes(this.filters.age.toLowerCase())
+                );
             }).length;
         },
     },
@@ -66,24 +104,25 @@ export default {
         async fetchUsers() {
             const userCollection = collection(db, 'users');
             const userSnapshot = await getDocs(userCollection);
+            // Map fetched data to the users array
             this.users = userSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-            console.log(this.users);
+            console.log(this.users); // Log the users to verify data structure
         },
+        // Update the current page on pagination change
         handlePageChange(newPage) {
             this.currentPage = newPage;
         },
+        // Update sort order based on user interaction
         handleSortChange({ prop, order }) {
-            if (order === 'ascending') {
-                this.users.sort((a, b) => (a[prop] > b[prop] ? 1 : -1));
-            } else if (order === 'descending') {
-                this.users.sort((a, b) => (a[prop] < b[prop] ? 1 : -1));
-            }
+            this.sortOrder = { prop, order };
         },
     },
     mounted() {
-        this.fetchUsers();
+        this.fetchUsers(); // Fetch users when component is mounted
     },
 };
 </script>
 
-<style scoped></style>
+<style scoped>
+/* Add any scoped styles here */
+</style>
