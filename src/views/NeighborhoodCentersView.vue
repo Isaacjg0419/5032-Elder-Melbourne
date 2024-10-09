@@ -4,7 +4,6 @@
         <div class="introduction-section">
             <div class="row">
                 <div class="col-12 col-lg-6">
-                    <h1>Neighborhood Centers</h1>
                     <p class="introduction-text">
                         Our dedicated neighbourhood centres host a range of<br> social and recreational activities for
                         older people and<br> carers and are popular spaces for local community groups<br> to meet.
@@ -17,26 +16,36 @@
                 </div>
             </div>
         </div>
+
         <div class="table-section">
-            <!-- Aged Care Centers Table -->
+            <!-- Aged Care Centers Table with Search Filters -->
             <h2>Aged Care Centers</h2>
-            <table class="table" role="table">
-                <thead>
-                    <tr>
-                        <th scope="col">Name</th>
-                        <th scope="col">Address</th>
-                        <th scope="col">Phone</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr v-for="(center, index) in centers" :key="index">
-                        <td>{{ center.name }}</td>
-                        <td>{{ center.address }}</td>
-                        <td>{{ center.phone }}</td>
-                    </tr>
-                </tbody>
-            </table>
+
+            <!-- Combined Search Filter -->
+            <div style="margin-bottom: 20px; display: flex; align-items: center;">
+                <el-select v-model="selectedFilter" placeholder="Select Filter"
+                    style="width: 200px; margin-right: 10px;">
+                    <el-option label="Name" value="name" />
+                    <el-option label="Address" value="address" />
+                    <el-option label="Phone" value="phone" />
+                </el-select>
+                <el-input v-model="searchQuery" placeholder="Enter search term" clearable style="flex: 1;" />
+                <el-button type="primary" @click="resetFilters" style="margin-left: 10px;">Clear</el-button>
+            </div>
+
+            <!-- Table with Sorting and Pagination -->
+            <el-table :data="filteredCenters" stripe style="width: 100%" @sort-change="handleSortChange"
+                :default-sort="{ prop: 'name', order: 'ascending' }">
+                <el-table-column prop="name" label="Name" sortable />
+                <el-table-column prop="address" label="Address" sortable />
+                <el-table-column prop="phone" label="Phone" sortable />
+            </el-table>
+
+            <!-- Pagination Controls -->
+            <el-pagination @current-change="handlePageChange" :current-page="currentPage" :page-size="pageSize"
+                :total="totalCenters" layout="prev, pager, next" style="margin-top: 20px;" />
         </div>
+
         <div class="map-section">
             <!-- Google Map -->
             <GoogleMap api-key="AIzaSyDaEyQ5hYpaWNvWFWMPo-7vYYt3_Fb9iRE" map-id="26be0c5b828394f8"
@@ -53,8 +62,7 @@
                             <input v-model="startLocation" placeholder="Enter starting location"
                                 aria-label="Enter your starting location" />
                             <button @click="getTripInfo(selectedCenter.address)" aria-label="Get trip information">Get
-                                Trip
-                                Info</button>
+                                Trip Info</button>
 
                             <div v-if="tripInfo">
                                 <h3>Trip Details</h3>
@@ -70,12 +78,11 @@
                 </AdvancedMarker>
             </GoogleMap>
         </div>
-
     </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import Navbar from '../components/NavBar.vue';
 import { db } from '../data/firebase.js';
 import { collection, getDocs } from "firebase/firestore";
@@ -83,6 +90,11 @@ import neighborhoodImage from '@/assets/neighborhood.jpg';
 import { GoogleMap, AdvancedMarker, InfoWindow } from 'vue3-google-map';
 
 const centers = ref([]);
+const selectedFilter = ref('name'); // The default selected filter is "name"
+const searchQuery = ref('');
+const currentPage = ref(1);
+const pageSize = ref(10);
+const sortOrder = ref({ prop: 'name', order: 'ascending' });
 const mapCenter = { lat: -37.8136, lng: 144.9631 };
 const zoomLevel = 12;
 const markers = ref([]);
@@ -90,14 +102,12 @@ const selectedCenter = ref(null);
 const startLocation = ref("");
 const tripInfo = ref(null);
 
+// Fetch aged care centers from Firestore
 async function fetchCenters() {
     try {
         const centerCollection = collection(db, "agedCareCenters");
         const snapshot = await getDocs(centerCollection);
-        centers.value = snapshot.docs.map(doc => ({
-            id: doc.id,
-            ...doc.data()
-        }));
+        centers.value = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
         markers.value = centers.value
             .filter(center => center.latitude && center.longitude)
@@ -112,20 +122,18 @@ async function fetchCenters() {
     }
 }
 
+// Handle marker click
 function handleMarkerClick(marker, center) {
-    selectedCenter.value = {
-        ...center,
-        position: marker.options.position
-    };
-    // refresh trip info
-    tripInfo.value = null;
+    selectedCenter.value = { ...center, position: marker.options.position };
+    tripInfo.value = null; // Reset trip info
 }
 
+// Handle closing InfoWindow
 function handleInfoWindowClose() {
     selectedCenter.value = null;
 }
 
-// get trip info
+// Get trip info based on start location and destination
 async function getTripInfo(destination) {
     if (!startLocation.value) return;
 
@@ -142,17 +150,9 @@ async function getTripInfo(destination) {
             tripInfo.value = {
                 distance: route.legs[0].distance.text,
                 duration: route.legs[0].duration.text,
-                //route response parse the HTML 
-                route: route.legs[0].steps.map(step => {
-                    return step.instructions
-                        .replace(/<\/?b>/g, '')
-                        .replace(/<\/?wbr>/g, '')
-                        .replace(/<[^>]*>/g, '')
-                        .trim();
-                }).join(", "),
+                route: route.legs[0].steps.map(step => step.instructions.replace(/<[^>]*>/g, '').trim()).join(", "),
             };
         } else {
-            console.error('Error fetching directions:', status);
             tripInfo.value = {
                 distance: "N/A",
                 duration: "N/A",
@@ -161,11 +161,58 @@ async function getTripInfo(destination) {
         }
     });
 }
+
+// Navigate to the selected center address using Google Maps
 function navigateTo(address) {
     const url = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(address)}`;
     window.open(url, '_blank');
 }
 
+// Sort and filter data based on user input
+const filteredCenters = computed(() => {
+    const filtered = centers.value.filter(center => {
+        const searchValue = searchQuery.value.toLowerCase();
+        return center[selectedFilter.value].toLowerCase().includes(searchValue);
+    });
+
+    // Reset current page to 1 if the filtered results change
+    if (currentPage.value > Math.ceil(filtered.length / pageSize.value)) {
+        currentPage.value = 1;
+    }
+
+    return filtered
+        .sort((a, b) => {
+            const prop = sortOrder.value.prop;
+            if (sortOrder.value.order === 'ascending') {
+                return a[prop] > b[prop] ? 1 : -1;
+            } else {
+                return a[prop] < b[prop] ? 1 : -1;
+            }
+        })
+        .slice((currentPage.value - 1) * pageSize.value, currentPage.value * pageSize.value);
+});
+
+const totalCenters = computed(() => {
+    const filtered = centers.value.filter(center => {
+        const searchValue = searchQuery.value.toLowerCase();
+        return center[selectedFilter.value].toLowerCase().includes(searchValue);
+    });
+    return filtered.length;
+});
+
+function handlePageChange(newPage) {
+    currentPage.value = newPage;
+}
+
+function handleSortChange({ prop, order }) {
+    sortOrder.value = { prop, order };
+}
+
+function resetFilters() {
+    searchQuery.value = '';
+    selectedFilter.value = 'name';
+    currentPage.value = 1; // Reset to page 1 when filters are reset
+}
 
 onMounted(() => {
     fetchCenters();
@@ -176,82 +223,19 @@ onMounted(() => {
 .introduction-section {
     margin-top: 20px;
     padding: 20px;
-    display: flex;
-    flex-direction: row;
-    justify-content: center;
-    align-items: center;
     text-align: center;
 }
 
-.introduction-text {
-    padding: 20px;
-    max-width: 800px;
-}
-
 .responsive-image {
-    margin-left: 10px;
     width: 100%;
     height: auto;
-    object-fit: cover;
 }
 
-
-@media (min-width: 992px) {
-    .introduction-section {
-        flex-direction: row;
-    }
-
-    .introduction-section h1 {
-        font-size: 2.5rem;
-    }
-
-    .introduction-text p {
-        font-size: 1.25rem;
-    }
+.table-section {
+    margin: 20px;
 }
 
-@media (max-width: 768px) {
-    .introduction-section {
-        flex-direction: column;
-        text-align: center;
-    }
-
-    .introduction-text {
-        margin: 0;
-        padding: 10px;
-        max-width: none;
-    }
-
-    .responsive-image {
-        margin: 0;
-        width: 100%;
-    }
-
-}
-
-.table-section,
 .map-section {
-    margin-left: 20px;
-    margin-right: 20px;
-    margin-bottom: 40px;
-}
-
-.table {
-    width: 100%;
-    border-collapse: collapse;
-    margin-top: 20px;
-}
-
-.table th {
-    background-color: #4a4a4a;
-    color: #ffffff;
-}
-
-.table td {
-    color: #333333;
-}
-
-GoogleMap {
-    margin-top: 40px;
+    margin: 20px;
 }
 </style>
