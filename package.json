@@ -30,6 +30,7 @@
     "firebase-functions": "^6.0.1",
     "jspdf": "^2.5.2",
     "jspdf-autotable": "^3.8.3",
+    "mailgun-js": "^0.22.0",
     "vue": "^3.4.29",
     "vue-chartjs": "^5.3.1",
     "vue-router": "^4.3.3",

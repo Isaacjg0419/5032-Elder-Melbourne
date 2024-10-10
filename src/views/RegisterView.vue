@@ -65,11 +65,13 @@
         </div>
     </div>
 </template>
+
 <script>
 import { db, auth } from '../data/firebase.js';
 import { collection, addDoc } from 'firebase/firestore';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 import DOMPurify from 'dompurify';
+import axios from 'axios'; // Import axios for sending emails
 
 export default {
     data() {
@@ -144,6 +146,31 @@ export default {
         togglePasswordVisibility() {
             this.showPassword = !this.showPassword;
         },
+        async sendEmail(to) {
+            const data = {
+                to: to,
+                subject: 'Welcome to Our Service!',
+                text: `Hello ${this.firstName},\n\nThank you for registering! We're glad to have you on board.\n\nBest regards,\nThe Team`
+            };
+
+            try {
+                const response = await axios.post('https://sendmail-lx42yvfdtq-uc.a.run.app/sendMail', data);
+                console.log('Email sent successfully:', response.data);
+                return true;
+            } catch (error) {
+                if (error.response) {
+                    console.error('Error response data: ', error.response.data);
+                    console.error('Error response status: ', error.response.status);
+                    console.error('Error response headers: ', error.response.headers);
+                } else if (error.request) {
+                    console.error('Error request: ', error.request);
+                } else {
+                    console.error('Error message: ', error.message);
+                }
+                return false;
+            }
+        },
+
 
         async handleRegister() {
             const sanitizedEmail = this.sanitizeInput(this.email);
@@ -159,9 +186,14 @@ export default {
 
             try {
                 const userCredential = await createUserWithEmailAndPassword(auth, sanitizedEmail, sanitizedPassword);
+                const emailSent = await this.sendEmail(sanitizedEmail);
 
-                // Determine the collection based on role
+                if (!emailSent) {
+                    throw new Error('Email failed to send, registration aborted.');
+                }
+
                 const collectionName = this.role === 'admin' ? 'admins' : 'users';
+
                 await addDoc(collection(db, collectionName), {
                     firstName: sanitizedFirstName,
                     lastName: sanitizedLastName,
@@ -173,13 +205,28 @@ export default {
                 alert('Registration successful!');
                 this.$router.push('/');
             } catch (error) {
-                console.error('Error during registration: ', error);
-                alert('Registration failed. Please try again.');
+                if (error.response) {
+                    console.error('Error response data: ', error.response.data);
+                    console.error('Error response status: ', error.response.status);
+                    console.error('Error response headers: ', error.response.headers);
+                } else if (error.request) {
+                    console.error('Error request: ', error.request);
+                } else {
+                    console.error('Error message: ', error.message);
+                }
+
+                if (error.code === 'auth/email-already-in-use') {
+                    alert('Email already in use, please try another.');
+                } else {
+                    alert('Registration failed: ' + error.message);
+                }
             }
         },
-    },
+    }
 };
 </script>
+
+
 <style scoped>
 .register-container {
     margin: 2rem;
