@@ -8,8 +8,8 @@
         <div class="collapse navbar-collapse justify-content-center" id="navbarNav">
             <ul class="navbar-nav">
                 <li class="nav-item">
-                    <router-link :class="{ 'active-link': isActive('/program-events') }" class="nav-link"
-                        to="/program-events">Program and Events</router-link>
+                    <router-link :class="{ 'active-link': isActive('/programs-events') }" class="nav-link"
+                        to="/programs-events">Program and Events</router-link>
                 </li>
                 <li class="nav-item">
                     <router-link :class="{ 'active-link': isActive('/support-services') }" class="nav-link"
@@ -26,7 +26,7 @@
             <button @click="logout" class="btn btn-danger">Logout</button>
         </div>
         <div v-else class="login">
-            <router-link :class="{ 'active-link': isActive('/login') }" class="nav-link" to="/login">Login</router-link>
+            <router-link :class="{ 'active-link': isActive('/') }" class="nav-link" to="/">Login</router-link>
         </div>
     </nav>
 </template>

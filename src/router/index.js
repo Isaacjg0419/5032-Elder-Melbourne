@@ -5,7 +5,7 @@ import HomeView from '../views/HomeView.vue'
 import SupportView from '../views/SupportView.vue'
 import AdminDashboardView from '@/views/AdminDashboardView.vue'
 import NeighborhoodCentersView from '@/views/NeighborhoodCentersView.vue'
-import ProgramEventsView from '@/views/ProgramEventsView.vue'
+import ProgramsEventsView from '@/views/ProgramsEventsView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -41,9 +41,9 @@ const router = createRouter({
       component: NeighborhoodCentersView
     },
     {
-      path: '/program-events',
-      name: 'program-events',
-      component: ProgramEventsView
+      path: '/programs-events',
+      name: 'ProgramsEvents',
+      component: ProgramsEventsView
     }
   ]
 })
