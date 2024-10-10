@@ -21,7 +21,7 @@
         <div class="faqs-section">
             <h2>Common FAQs</h2>
             <div class="faqs-container">
-                <div v-for="(faq, index) in faqList" :key="index" class="faqs-list">
+                <div v-for="(faq, index) in currentFaqs" :key="index" class="faqs-list">
                     <div class="faqs-title" @click="toggleFaq(index)" :aria-expanded="expandedFaqs[index]"
                         :id="'faq-title-' + index" :class="{ active: expandedFaqs[index] }" tabindex="0"
                         @keydown.enter="toggleFaq(index)" @keydown.space.prevent="toggleFaq(index)" role="button"
@@ -67,7 +67,11 @@
                 </div>
             </div>
 
-            <!-- 用户提问部分 -->
+            <!-- Pagination controls -->
+            <el-pagination :current-page="currentPage" :page-size="pageSize" :total="faqList.length"
+                @current-change="handlePageChange" layout="total, prev, pager, next, jumper" background />
+
+            <!-- post question sections -->
             <div class="question-section">
                 <h3>Ask a Question with Gemini-AI</h3>
                 <input v-model="userQuestion" type="text" placeholder="Type your question here" class="question-input"
@@ -92,9 +96,9 @@
 
 <script setup>
 import Navbar from '../components/NavBar.vue';
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, computed } from 'vue';
 import { db } from '@/data/firebase';
-import { doc, getDoc, getDocs, collection, updateDoc, addDoc } from 'firebase/firestore';
+import { doc, getDoc, getDocs, collection, updateDoc } from 'firebase/firestore';
 import supportsImage from '@/assets/services-supports.jpg';
 
 const faqList = ref([]);
@@ -105,6 +109,17 @@ const showThankYou = ref([]);
 const userQuestion = ref('');
 const response = ref('');
 
+// Pagination variables
+const currentPage = ref(1);
+const itemsPerPage = 10;
+
+// Computed property to get current FAQs for the page
+const currentFaqs = computed(() => {
+    const start = (currentPage.value - 1) * itemsPerPage;
+    const end = start + itemsPerPage;
+    return faqList.value.slice(start, end);
+});
+
 const toggleFaq = (index) => {
     expandedFaqs.value[index] = !expandedFaqs.value[index];
 };
@@ -112,7 +127,7 @@ const toggleFaq = (index) => {
 const fetchFaqRatings = async () => {
     try {
         const faqsSnapshot = await getDocs(collection(db, 'faqs'));
-        faqList.value = []; // Clear previous data
+        faqList.value = [];
         faqsSnapshot.forEach((doc) => {
             const faqData = doc.data();
             faqList.value.push({
@@ -180,43 +195,32 @@ const submitQuestion = async () => {
 
     try {
         const apiKey = "AIzaSyDI1T8gJRzjevz9V2sfvkYmzQP0Bdit7wY";
-        const prompt = `You are an expert in elder care. Please provide a concise and professional answer to the following question, summarizing your response in three sentences: ${userQuestion.value}`;
-
-        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${apiKey}`, {
+        const prompt = `You are an expert in elder care. Please provide a concise and informative answer to the following question: ${userQuestion.value}`;
+        const response = await fetch('https://api.openai.com/v1/engines/text-davinci-003/completions', {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json'
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${apiKey}`
             },
             body: JSON.stringify({
-                contents: [
-                    {
-                        parts: [
-                            { text: prompt }
-                        ]
-                    }
-                ]
+                prompt: prompt,
+                max_tokens: 150,
+                n: 1,
+                stop: null,
+                temperature: 0.7
             })
         });
 
-        if (!res.ok) {
-            throw new Error(`HTTP error! status: ${res.status}`);
-        }
-
-        const data = await res.json();
-        if (data.candidates && data.candidates.length > 0) {
-            response.value = data.candidates[0].content[0].text;
-        }
-
+        const data = await response.json();
+        response.value = data.choices[0].text.trim();
     } catch (error) {
-        console.error('Error submitting question:', error);
-        response.value = 'Sorry, there was an error processing your request.';
+        console.error('Error fetching response from OpenAI:', error);
     }
 };
 
-const handleSatisfaction = (isSatisfied) => {
-    userQuestion.value = '';
-    response.value = '';
-    showThankYou.value = [];
+// Pagination methods
+const handlePageChange = (newPage) => {
+    currentPage.value = newPage;
 };
 
 onMounted(() => {
