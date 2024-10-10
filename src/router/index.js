@@ -3,6 +3,7 @@ import LoginView from '../views/LoginView.vue'
 import RegisterView from '../views/RegisterView.vue'
 import HomeView from '../views/HomeView.vue'
 import SupportView from '../views/SupportView.vue'
+import AdminChartsView from '@/views/AdminChartsView.vue'
 import AdminDashboardView from '@/views/AdminDashboardView.vue'
 import NeighborhoodCentersView from '@/views/NeighborhoodCentersView.vue'
 import ProgramsEventsView from '@/views/ProgramsEventsView.vue'
@@ -31,11 +32,6 @@ const router = createRouter({
       component: RegisterView
     },
     {
-      path: '/admin-dashboard',
-      name: 'AdminDashboard',
-      component: AdminDashboardView
-    },
-    {
       path: '/neighborhood-centers',
       name: 'neighborhood',
       component: NeighborhoodCentersView
@@ -44,6 +40,16 @@ const router = createRouter({
       path: '/programs-events',
       name: 'ProgramsEvents',
       component: ProgramsEventsView
+    },
+    {
+      path: '/admin-dashboard',
+      name: 'AdminDashboard',
+      component: AdminDashboardView
+    },
+    {
+      path: '/admin-charts',
+      name: 'AdminCharts',
+      component: AdminChartsView
     }
   ]
 })
