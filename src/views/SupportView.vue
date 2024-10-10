@@ -14,7 +14,7 @@
                 </div>
                 <div class="col-12 col-lg-6">
                     <img :src="supportsImage" alt="An image showing support services available for older adults"
-                        class="responsive-image">
+                        class="responsive-image" />
                 </div>
             </div>
         </div>
@@ -24,12 +24,15 @@
                 <div v-for="(faq, index) in faqList" :key="index" class="faqs-list">
                     <div class="faqs-title" @click="toggleFaq(index)" :aria-expanded="expandedFaqs[index]"
                         :id="'faq-title-' + index" :class="{ active: expandedFaqs[index] }" tabindex="0"
-                        @keydown.enter="toggleFaq(index)" @keydown.space="toggleFaq(index)">
+                        @keydown.enter="toggleFaq(index)" @keydown.space.prevent="toggleFaq(index)" role="button"
+                        aria-controls="'faq-text-' + index">
                         <span>{{ faq.question }}</span>
                         <span class="arrow" :class="{ open: expandedFaqs[index] }">▼</span>
                     </div>
-                    <p v-show="expandedFaqs[index]" :aria-labelledby="'faq-title-' + index" class="faqs-text">
-                        {{ faq.answer }}</p>
+                    <p v-show="expandedFaqs[index]" :id="'faq-text-' + index" :aria-labelledby="'faq-title-' + index"
+                        class="faqs-text">
+                        {{ faq.answer }}
+                    </p>
                     <div v-show="expandedFaqs[index]" class="rating-section">
                         <div class="row" style="margin-right: 2rem;">
                             <div class="col-12">
@@ -68,16 +71,18 @@
             <div class="question-section">
                 <h3>Ask a Question with Gemini-AI</h3>
                 <input v-model="userQuestion" type="text" placeholder="Type your question here" class="question-input"
-                    style="margin-top: 20px;" />
-                <button @click="submitQuestion" class="btn btn-primary" style="margin-top: 20px;">Submit</button>
+                    style="margin-top: 20px;" aria-label="Type your question" />
+                <button @click="submitQuestion" class="btn btn-primary" style="margin-top: 20px;"
+                    aria-label="Submit your question">Submit</button>
                 <div v-if="response" class="response-section">
                     <h4>Response:</h4>
                     <p>{{ response }}</p>
                     <div class="satisfaction-section">
                         <p>**Are you satisfied with this response?**</p>
-                        <button @click="handleSatisfaction(true)" class="btn btn-success">Yes</button>
-                        <button @click="handleSatisfaction(false)" class="btn btn-danger"
-                            style="margin-left: 10px;">No</button>
+                        <button @click="handleSatisfaction(true)" class="btn btn-success"
+                            aria-label="Yes, I am satisfied">Yes</button>
+                        <button @click="handleSatisfaction(false)" class="btn btn-danger" style="margin-left: 10px;"
+                            aria-label="No, I am not satisfied">No</button>
                     </div>
                 </div>
             </div>
@@ -199,46 +204,24 @@ const submitQuestion = async () => {
 
         const data = await res.json();
         if (data.candidates && data.candidates.length > 0) {
-            response.value = data.candidates[0].content.parts[0].text;
-            console.log(response.value); // Log the response
-        } else {
-            response.value = "No response received.";
+            response.value = data.candidates[0].content[0].text;
         }
+
     } catch (error) {
-        console.error("Error submitting question:", error);
-        response.value = "Error occurred while fetching response.";
+        console.error('Error submitting question:', error);
+        response.value = 'Sorry, there was an error processing your request.';
     }
 };
 
-const handleSatisfaction = async (isSatisfied) => {
-    if (isSatisfied) {
-        await saveToFirestore(userQuestion.value, response.value, 5, 1); // Save question and answer with initial rating
-        await fetchFaqRatings(); // Refresh FAQ data
-    } else {
-        userQuestion.value = ''; // Clear question
-        response.value = ''; // Clear response
-    }
+const handleSatisfaction = (isSatisfied) => {
+    userQuestion.value = '';
+    response.value = '';
+    showThankYou.value = [];
 };
 
-const saveToFirestore = async (question, answer, avgRating, ratingCount) => {
-    try {
-        await addDoc(collection(db, 'faqs'), {
-            question: question,
-            answer: answer,
-            avgRating: avgRating,
-            totalRatings: avgRating, // assuming totalRatings = avgRating when saving
-            ratingCount: ratingCount,
-        });
-        console.log("Question and answer saved to Firestore");
-        userQuestion.value = ''; // Clear question
-        response.value = ''; // Clear response
-    } catch (error) {
-        console.error("Error saving question and answer:", error);
-    }
-};
-
-// Fetch FAQs on component mount
-onMounted(fetchFaqRatings);
+onMounted(() => {
+    fetchFaqRatings();
+});
 </script>
 
 <style scoped>
@@ -277,19 +260,21 @@ onMounted(fetchFaqRatings);
     padding: 10px;
     border: 1px solid #ccc;
     border-radius: 5px;
+    background-color: #e0e0e0;
+    color: #333;
 }
 
 .faqs-text {
     padding: 10px;
-    background-color: #f9f9f9;
+    background-color: #f2f2f2;
     border-radius: 5px;
+    color: #333;
 }
 
 .rating-section {
     padding: 10px;
-    background-color: #f0f8ff;
+    background-color: #b3e5fc;
     border-radius: 5px;
-
 }
 
 .rating-buttons .btn {
@@ -306,12 +291,16 @@ onMounted(fetchFaqRatings);
     width: 100%;
     padding: 10px;
     margin-top: 10px;
+    background-color: #ffffff;
+    border: 1px solid #ccc;
+    border-radius: 5px;
 }
 
 .response-section {
     margin-top: 20px;
-    background-color: #e0f7fa;
+    background-color: #b2ebf2;
     padding: 10px;
     border-radius: 5px;
+    color: #333;
 }
 </style>
