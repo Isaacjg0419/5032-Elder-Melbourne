@@ -122,7 +122,7 @@ const toggleFaq = (index) => {
 const fetchFaqRatings = async () => {
     try {
         const faqsSnapshot = await getDocs(collection(db, 'faqs'));
-        faqList.value = []; // Clear previous data
+        faqList.value = [];
         faqsSnapshot.forEach((doc) => {
             const faqData = doc.data();
             faqList.value.push({
@@ -147,6 +147,15 @@ const fetchFaqRatings = async () => {
 };
 
 const rateFaq = async (index, rating) => {
+    // Intelligent Data Validation
+    if (index < 0 || index >= faqList.value.length) {
+        console.error('Invalid FAQ index.');
+        return;
+    }
+    if (typeof rating !== 'number' || rating < 1 || rating > 5) {
+        console.error('Invalid rating value. It should be a number between 1 and 5.');
+        return;
+    }
     try {
         const faq = faqList.value[index];
 
@@ -246,8 +255,8 @@ const saveToFirestore = async (question, answer, avgRating, ratingCount) => {
             ratingCount: ratingCount,
         });
         console.log("Question and answer saved to Firestore");
-        userQuestion.value = ''; // Clear question
-        response.value = ''; // Clear response
+        userQuestion.value = '';
+        response.value = '';
     } catch (error) {
         console.error("Error saving question and answer:", error);
     }

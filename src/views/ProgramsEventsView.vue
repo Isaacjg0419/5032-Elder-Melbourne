@@ -237,7 +237,6 @@ const bookAppointment = async (event) => {
             eventStart: event.start,
             eventLocation: event.location,
         });
-        alert('Appointment booked successfully!');
 
         const calendarApi = calendarRef.value.getApi();
         calendarApi.addEvent({
@@ -279,16 +278,20 @@ const cancelAppointment = async (event) => {
 
         bookedAppointments.value = bookedAppointments.value.filter(a => a.id !== appointment.id);
 
+
         const calendarApi = calendarRef.value.getApi();
         const eventToRemove = calendarApi.getEventById(appointment.id);
         if (eventToRemove) {
             eventToRemove.remove();
         }
+
+
     } catch (error) {
         console.error("Error cancelling appointment:", error);
         alert('Failed to cancel appointment.');
     }
 };
+
 </script>
 
 <style scoped>
@@ -321,21 +324,16 @@ const cancelAppointment = async (event) => {
 .events-section,
 .calendar-section {
     padding: 0 20px;
-    /* 为两侧添加间距 */
 }
 
 .export-button-container {
     display: flex;
     justify-content: space-between;
-    /* 在同一行中分开 */
     align-items: center;
-    /* 垂直居中对齐 */
     margin-top: 20px;
-    /* 顶部间距 */
 }
 
 .export-button {
     margin-left: 10px;
-    /* 按钮与标题之间的间距 */
 }
 </style>

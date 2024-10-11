@@ -60,7 +60,6 @@
     </el-container>
 </template>
 
-
 <script>
 import AdminNavBar from '@/components/AdminNavBar.vue';
 import { db } from '../data/firebase';
@@ -91,7 +90,6 @@ export default {
                 order: 'ascending',
             },
             editingRow: null,
-            shouldSort: false,
         };
     },
     computed: {
@@ -113,16 +111,13 @@ export default {
                 );
             });
 
-            // Sort filtered data if shouldSort is true
-            if (this.shouldSort) {
-                filteredData.sort((a, b) => {
-                    const prop = this.sortOrder.prop;
-                    return this.sortOrder.order === 'ascending'
-                        ? a[prop] > b[prop] ? 1 : -1
-                        : a[prop] < b[prop] ? 1 : -1;
-                });
-                this.shouldSort = false;
-            }
+            // Sort filtered data
+            filteredData.sort((a, b) => {
+                const prop = this.sortOrder.prop;
+                return this.sortOrder.order === 'ascending'
+                    ? a[prop] > b[prop] ? 1 : -1
+                    : a[prop] < b[prop] ? 1 : -1;
+            });
 
             // Paginate data
             const start = (this.currentPage - 1) * this.pageSize;
@@ -158,8 +153,7 @@ export default {
                 const { userCount, adminCount } = await response.json();
                 this.userCount = userCount;
                 this.adminCount = adminCount;
-                console.log(this.userCount,
-                    this.adminCount)
+                console.log(this.userCount, this.adminCount);
             } catch (error) {
                 console.error("Error fetching counts: ", error);
             }
@@ -168,8 +162,9 @@ export default {
             this.currentPage = newPage;
         },
         handleSortChange({ prop, order }) {
-            this.sortOrder = { prop, order };
-            this.shouldSort = true;
+            if (!this.editingRow) { // Only allow sorting if not editing
+                this.sortOrder = { prop, order };
+            }
         },
         showUsers() {
             this.showUserInfo = true;
@@ -194,8 +189,7 @@ export default {
                 if (index !== -1) {
                     targetList[index] = { id, ...data };
                 }
-                this.editingRow = null;
-                this.shouldSort = true;
+                this.editingRow = null; // Reset editingRow after submission
             } catch (error) {
                 console.error("Error updating document: ", error);
             }
@@ -215,12 +209,11 @@ export default {
                     this.admins = updatedList;
                 }
                 console.log("Updated List:", updatedList);
+                await this.fetchCounts();
             } catch (error) {
                 console.error("Error deleting document: ", error);
             }
         },
-
-
         isEditing(row) {
             return this.editingRow === row;
         },
@@ -229,7 +222,7 @@ export default {
     mounted() {
         this.fetchUsers();
         this.fetchAdmins();
-        this.fetchCounts()
+        this.fetchCounts();
     },
 };
 </script>

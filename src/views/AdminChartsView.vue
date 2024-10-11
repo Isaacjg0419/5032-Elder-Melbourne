@@ -7,7 +7,8 @@
         <el-main>
             <div>
                 <h2>Appointments Overview</h2>
-                <BarChart :chart-data="chartData" :chart-options="chartOptions" />
+                <div v-if="loading">Loading...</div>
+                <BarChart v-else :chart-data="chartData" :chart-options="chartOptions" />
                 <div v-if="noAppointments">No appointments available.</div>
             </div>
         </el-main>
@@ -42,21 +43,24 @@ const chartOptions = ref({
     }
 });
 const noAppointments = ref(false);
+const loading = ref(true);
 
 onMounted(async () => {
+    const startTime = performance.now();
     const appointments = await fetchAppointments();
     console.log('Fetched appointments:', appointments);
     prepareChartData(appointments);
+    const endTime = performance.now();
+    console.log(`Chart Data Preparation Time: ${(endTime - startTime).toFixed(2)} ms`);
     console.log('Chart Data:', chartData.value);
+    loading.value = false;
 });
 
 const fetchAppointments = async () => {
     const appointmentsCollection = collection(db, 'appointments');
     const snapshot = await getDocs(appointmentsCollection);
-
     const appointments = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     console.log('Fetched appointments:', appointments);
-
     return appointments;
 };
 

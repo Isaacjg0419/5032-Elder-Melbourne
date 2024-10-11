@@ -188,10 +188,6 @@ export default {
                 const userCredential = await createUserWithEmailAndPassword(auth, sanitizedEmail, sanitizedPassword);
                 const emailSent = await this.sendEmail(sanitizedEmail);
 
-                if (!emailSent) {
-                    throw new Error('Email failed to send, registration aborted.');
-                }
-
                 const collectionName = this.role === 'admin' ? 'admins' : 'users';
 
                 await addDoc(collection(db, collectionName), {

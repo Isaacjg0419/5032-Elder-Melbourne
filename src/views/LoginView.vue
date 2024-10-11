@@ -36,7 +36,6 @@
             <p>Don't have an account? <a href="/register">Register a new one</a></p>
         </div>
     </div>
-    <!-- TODO,dashboard page for login as admin -->
 </template>
 
 <script>
