@@ -11,12 +11,13 @@
                 <el-input v-model="filters.email" placeholder="Search by Email" />
                 <el-input v-model="filters.age" placeholder="Search by Age" />
             </div>
-
             <div style="margin-bottom: 20px;">
                 <el-button :class="{ active: showUserInfo }" @click="showUsers" type="primary">User Info</el-button>
                 <el-button :class="{ active: !showUserInfo }" @click="showAdmins" type="primary">Admin Info</el-button>
             </div>
-
+            <el-header style="margin-top: 20px;">
+                <p>Total {{ showUserInfo ? userCount : adminCount }} {{ showUserInfo ? 'Users' : 'Admins' }}</p>
+            </el-header>
             <el-table :data="filteredData" style="width: 100%" :default-sort="{ prop: 'firstName', order: 'ascending' }"
                 @sort-change="handleSortChange">
                 <el-table-column prop="firstName" label="First Name" sortable>
@@ -51,7 +52,6 @@
                     </template>
                 </el-table-column>
             </el-table>
-
             <div style="display: flex; justify-content: center; margin-top: 20px;">
                 <el-pagination @current-change="handlePageChange" :current-page="currentPage" :page-size="pageSize"
                     :total="totalData" layout="prev, pager, next" />
@@ -63,6 +63,8 @@
 
 <script>
 import AdminNavBar from '@/components/AdminNavBar.vue';
+import { db } from '../data/firebase';
+import { collection, getDocs, doc, deleteDoc, updateDoc } from 'firebase/firestore';
 
 export default {
     name: 'AdminDashboardView',
@@ -73,6 +75,8 @@ export default {
         return {
             users: [],
             admins: [],
+            userCount: 0,
+            adminCount: 0,
             showUserInfo: true,
             filters: {
                 firstName: '',
@@ -148,6 +152,18 @@ export default {
                 console.error("Error fetching admins: ", error);
             }
         },
+        async fetchCounts() {
+            try {
+                const response = await fetch('https://getuserandadmincounts-lx42yvfdtq-uc.a.run.app');
+                const { userCount, adminCount } = await response.json();
+                this.userCount = userCount;
+                this.adminCount = adminCount;
+                console.log(this.userCount,
+                    this.adminCount)
+            } catch (error) {
+                console.error("Error fetching counts: ", error);
+            }
+        },
         handlePageChange(newPage) {
             this.currentPage = newPage;
         },
@@ -168,24 +184,11 @@ export default {
         },
         async submitItem(item) {
             const { id, ...data } = item;
-            const functionUrl = this.showUserInfo
-                ? 'https://updateuseroradmin-lx42yvfdtq-uc.a.run.app'
-                : 'https://updateuseroradmin-lx42yvfdtq-uc.a.run.app';
+            const collectionName = this.showUserInfo ? 'users' : 'admins';
+            const userDoc = doc(db, collectionName, id);
 
             try {
-                const response = await fetch(functionUrl, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ id, ...data }),
-                });
-
-                if (!response.ok) {
-                    throw new Error('Failed to update item');
-                }
-
-                // Update local data directly
+                await updateDoc(userDoc, { ...data });
                 const targetList = this.showUserInfo ? this.users : this.admins;
                 const index = targetList.findIndex(user => user.id === id);
                 if (index !== -1) {
@@ -197,38 +200,36 @@ export default {
                 console.error("Error updating document: ", error);
             }
         },
-
         async deleteItem(id) {
-            const functionUrl = this.showUserInfo
-                ? 'https://deleteuseroradmin-lx42yvfdtq-uc.a.run.app'
-                : 'https://deleteuseroradmin-lx42yvfdtq-uc.a.run.app';
-
+            const collectionName = this.showUserInfo ? 'users' : 'admins';
+            const userDoc = doc(db, collectionName, id);
             try {
-                const response = await fetch(functionUrl, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ id }),
-                });
-
-                if (!response.ok) {
-                    throw new Error('Failed to delete item');
-                }
-
+                await deleteDoc(userDoc);
                 const targetList = this.showUserInfo ? this.users : this.admins;
-                this[targetList] = targetList.filter(user => user.id !== id);
+
+                const updatedList = targetList.filter(user => user.id !== id);
+
+                if (this.showUserInfo) {
+                    this.users = updatedList;
+                } else {
+                    this.admins = updatedList;
+                }
+                console.log("Updated List:", updatedList);
             } catch (error) {
                 console.error("Error deleting document: ", error);
             }
         },
+
+
         isEditing(row) {
-            return this.editingRow === row; // Check if the current row is in editing state
+            return this.editingRow === row;
         },
     },
+
     mounted() {
         this.fetchUsers();
         this.fetchAdmins();
+        this.fetchCounts()
     },
 };
 </script>

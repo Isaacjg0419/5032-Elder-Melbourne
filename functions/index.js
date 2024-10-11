@@ -63,42 +63,58 @@ exports.getAdmins = functions.https.onRequest((req, res) => {
     }
   })
 })
+exports.getUserAndAdminCounts = functions.https.onRequest(async (req, res) => {
+  cors(req, res, async () => {
+    try {
+      const usersSnapshot = await admin.firestore().collection('users').get()
+      const adminsSnapshot = await admin.firestore().collection('admins').get()
 
-exports.updateUserOrAdmin = functions.https.onRequest(async (req, res) => {
-  if (req.method !== 'POST') {
-    return res.status(405).send('Method Not Allowed')
-  }
+      const userCount = usersSnapshot.size
+      const adminCount = adminsSnapshot.size
 
-  const { id, data, collection } = req.body
-  if (!id || !data || !collection) {
-    return res.status(400).send('Missing parameters')
-  }
-
-  try {
-    const docRef = admin.firestore().collection(collection).doc(id)
-    await docRef.update(data)
-    res.status(200).send('Document updated successfully')
-  } catch (error) {
-    console.error('Error updating document:', error)
-    res.status(500).send('Error updating document')
-  }
+      res.status(200).send({ userCount, adminCount })
+    } catch (error) {
+      console.error('Error fetching counts:', error)
+      res.status(500).send('Error fetching counts')
+    }
+  })
 })
 
-exports.deleteUserOrAdmin = functions.https.onRequest(async (req, res) => {
-  if (req.method !== 'DELETE') {
-    return res.status(405).send('Method Not Allowed')
-  }
+// exports.updateUserOrAdmin = functions.https.onRequest(async (req, res) => {
+//   if (req.method !== 'POST') {
+//     return res.status(405).send('Method Not Allowed')
+//   }
 
-  const { id, collection } = req.body
-  if (!id || !collection) {
-    return res.status(400).send('Missing parameters')
-  }
+//   const { id, data, collection } = req.body
+//   if (!id || !data || !collection) {
+//     return res.status(400).send('Missing parameters')
+//   }
 
-  try {
-    await admin.firestore().collection(collection).doc(id).delete()
-    res.status(200).send('Document deleted successfully')
-  } catch (error) {
-    console.error('Error deleting document:', error)
-    res.status(500).send('Error deleting document')
-  }
-})
+//   try {
+//     const docRef = admin.firestore().collection(collection).doc(id)
+//     await docRef.update(data)
+//     res.status(200).send('Document updated successfully')
+//   } catch (error) {
+//     console.error('Error updating document:', error)
+//     res.status(500).send('Error updating document')
+//   }
+// })
+
+// exports.deleteUserOrAdmin = functions.https.onRequest(async (req, res) => {
+//   if (req.method !== 'DELETE') {
+//     return res.status(405).send('Method Not Allowed')
+//   }
+
+//   const { id, collection } = req.body
+//   if (!id || !collection) {
+//     return res.status(400).send('Missing parameters')
+//   }
+
+//   try {
+//     await admin.firestore().collection(collection).doc(id).delete()
+//     res.status(200).send('Document deleted successfully')
+//   } catch (error) {
+//     console.error('Error deleting document:', error)
+//     res.status(500).send('Error deleting document')
+//   }
+// })
