@@ -13,8 +13,8 @@
             </div>
 
             <div style="margin-bottom: 20px;">
-                <el-button :class="{ active: showUserInfo }" @click="showUsers">User Info</el-button>
-                <el-button :class="{ active: !showUserInfo }" @click="showAdmins">Admin Info</el-button>
+                <el-button :class="{ active: showUserInfo }" @click="showUsers" type="primary">User Info</el-button>
+                <el-button :class="{ active: !showUserInfo }" @click="showAdmins" type="primary">Admin Info</el-button>
             </div>
 
             <el-table :data="filteredData" style="width: 100%" :default-sort="{ prop: 'firstName', order: 'ascending' }"
@@ -60,15 +60,14 @@
     </el-container>
 </template>
 
+
 <script>
-import { db } from '../data/firebase';
-import { collection, getDocs, doc, deleteDoc, updateDoc } from 'firebase/firestore';
-import AdminNavBar from '@/components/AdminNavBar.vue'; // Adjust the import path as needed
+import AdminNavBar from '@/components/AdminNavBar.vue';
 
 export default {
     name: 'AdminDashboardView',
     components: {
-        AdminNavBar, // Register the AdminNavBar component
+        AdminNavBar,
     },
     data() {
         return {
@@ -87,14 +86,15 @@ export default {
                 prop: 'firstName',
                 order: 'ascending',
             },
-            editingRow: null, // 当前正在编辑的行
-            shouldSort: false, // 控制是否需要排序
+            editingRow: null,
+            shouldSort: false,
         };
     },
     computed: {
         filteredData() {
             const data = this.showUserInfo ? this.users : this.admins;
 
+            // Filter data based on search criteria
             const filteredData = data.filter(item => {
                 const firstName = item.firstName?.toLowerCase() || '';
                 const lastName = item.lastName?.toLowerCase() || '';
@@ -109,18 +109,15 @@ export default {
                 );
             });
 
-            // Sort filtered data only if shouldSort is true
+            // Sort filtered data if shouldSort is true
             if (this.shouldSort) {
                 filteredData.sort((a, b) => {
                     const prop = this.sortOrder.prop;
-                    if (this.sortOrder.order === 'ascending') {
-                        return a[prop] > b[prop] ? 1 : -1;
-                    } else if (this.sortOrder.order === 'descending') {
-                        return a[prop] < b[prop] ? 1 : -1;
-                    }
-                    return 0;
+                    return this.sortOrder.order === 'ascending'
+                        ? a[prop] > b[prop] ? 1 : -1
+                        : a[prop] < b[prop] ? 1 : -1;
                 });
-                this.shouldSort = false; // Reset shouldSort after sorting
+                this.shouldSort = false;
             }
 
             // Paginate data
@@ -129,26 +126,26 @@ export default {
             return filteredData.slice(start, end);
         },
         totalData() {
-            return this.filteredData.length; // Use filtered data for total count
+            return this.filteredData.length;
         },
     },
     methods: {
         async fetchUsers() {
             try {
-                const userCollection = collection(db, 'users');
-                const userSnapshot = await getDocs(userCollection);
-                this.users = userSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                const response = await fetch('https://getusers-lx42yvfdtq-uc.a.run.app');
+                const data = await response.json();
+                this.users = data;
             } catch (error) {
-                console.error("Error fetching users: ", error); // 错误处理
+                console.error("Error fetching users: ", error);
             }
         },
         async fetchAdmins() {
             try {
-                const adminCollection = collection(db, 'admins');
-                const adminSnapshot = await getDocs(adminCollection);
-                this.admins = adminSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                const response = await fetch('https://getadmins-lx42yvfdtq-uc.a.run.app');
+                const data = await response.json();
+                this.admins = data;
             } catch (error) {
-                console.error("Error fetching admins: ", error); // 错误处理
+                console.error("Error fetching admins: ", error);
             }
         },
         handlePageChange(newPage) {
@@ -156,7 +153,7 @@ export default {
         },
         handleSortChange({ prop, order }) {
             this.sortOrder = { prop, order };
-            this.shouldSort = true; // Enable sorting
+            this.shouldSort = true;
         },
         showUsers() {
             this.showUserInfo = true;
@@ -167,41 +164,66 @@ export default {
             this.currentPage = 1;
         },
         editItem(item) {
-            this.editingRow = item; // 设置当前编辑行
+            this.editingRow = item;
         },
         async submitItem(item) {
-            const { id, ...data } = item; // Get ID and data to update
-            const collectionName = this.showUserInfo ? 'users' : 'admins'; // Determine collection name
-            const userDoc = doc(db, collectionName, id); // Get document reference
+            const { id, ...data } = item;
+            const functionUrl = this.showUserInfo
+                ? 'https://updateuseroradmin-lx42yvfdtq-uc.a.run.app'
+                : 'https://updateuseroradmin-lx42yvfdtq-uc.a.run.app';
 
             try {
-                await updateDoc(userDoc, { ...data }); // Use spread operator to ensure a new object
+                const response = await fetch(functionUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ id, ...data }),
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to update item');
+                }
+
                 // Update local data directly
                 const targetList = this.showUserInfo ? this.users : this.admins;
                 const index = targetList.findIndex(user => user.id === id);
                 if (index !== -1) {
-                    targetList[index] = { id, ...data }; // Update local data
+                    targetList[index] = { id, ...data };
                 }
-                this.editingRow = null; // Clear editing row
-                this.shouldSort = true; // Set shouldSort to true to enable sorting after submission
+                this.editingRow = null;
+                this.shouldSort = true;
             } catch (error) {
-                console.error("Error updating document: ", error); // Error handling
+                console.error("Error updating document: ", error);
             }
         },
+
         async deleteItem(id) {
-            const collectionName = this.showUserInfo ? 'users' : 'admins'; // 确定集合名称
-            const userDoc = doc(db, collectionName, id); // 获取用户或管理员文档引用
+            const functionUrl = this.showUserInfo
+                ? 'https://deleteuseroradmin-lx42yvfdtq-uc.a.run.app'
+                : 'https://deleteuseroradmin-lx42yvfdtq-uc.a.run.app';
+
             try {
-                await deleteDoc(userDoc); // 删除用户或管理员
-                // Remove from local data
+                const response = await fetch(functionUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ id }),
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to delete item');
+                }
+
                 const targetList = this.showUserInfo ? this.users : this.admins;
                 this[targetList] = targetList.filter(user => user.id !== id);
             } catch (error) {
-                console.error("Error deleting document: ", error); // 错误处理
+                console.error("Error deleting document: ", error);
             }
         },
         isEditing(row) {
-            return this.editingRow === row; // 检查当前行是否在编辑状态
+            return this.editingRow === row; // Check if the current row is in editing state
         },
     },
     mounted() {
@@ -219,7 +241,6 @@ export default {
 
 .active {
     background-color: #409EFF;
-    /* Element Plus primary color */
     color: white;
 }
 </style>
