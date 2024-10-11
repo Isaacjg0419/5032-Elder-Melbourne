@@ -21,7 +21,7 @@
         <div class="faqs-section">
             <h2>Common FAQs</h2>
             <div class="faqs-container">
-                <div v-for="(faq, index) in faqList" :key="index" class="faqs-list">
+                <div v-for="(faq, index) in paginatedFaqs" :key="index" class="faqs-list">
                     <div class="faqs-title" @click="toggleFaq(index)" :aria-expanded="expandedFaqs[index]"
                         :id="'faq-title-' + index" :class="{ active: expandedFaqs[index] }" tabindex="0"
                         @keydown.enter="toggleFaq(index)" @keydown.space="toggleFaq(index)">
@@ -64,7 +64,11 @@
                 </div>
             </div>
 
-            <!-- 用户提问部分 -->
+            <el-pagination @current-change="handleCurrentChange" :current-page="currentPage" :page-size="itemsPerPage"
+                :total="faqList.length" layout="total, prev, pager, next, jumper">
+            </el-pagination>
+
+            <!--user question with gemini ai -->
             <div class="question-section">
                 <h3>Ask a Question with Gemini-AI</h3>
                 <input v-model="userQuestion" type="text" placeholder="Type your question here" class="question-input"
@@ -87,7 +91,7 @@
 
 <script setup>
 import Navbar from '../components/NavBar.vue';
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, computed } from 'vue';
 import { db } from '@/data/firebase';
 import { doc, getDoc, getDocs, collection, updateDoc, addDoc } from 'firebase/firestore';
 import supportsImage from '@/assets/services-supports.jpg';
@@ -99,6 +103,17 @@ const userRating = ref([]);
 const showThankYou = ref([]);
 const userQuestion = ref('');
 const response = ref('');
+const currentPage = ref(1);
+const itemsPerPage = 10;
+
+const paginatedFaqs = computed(() => {
+    const start = (currentPage.value - 1) * itemsPerPage;
+    return faqList.value.slice(start, start + itemsPerPage);
+});
+
+const handleCurrentChange = (newPage) => {
+    currentPage.value = newPage;
+};
 
 const toggleFaq = (index) => {
     expandedFaqs.value[index] = !expandedFaqs.value[index];
@@ -200,7 +215,7 @@ const submitQuestion = async () => {
         const data = await res.json();
         if (data.candidates && data.candidates.length > 0) {
             response.value = data.candidates[0].content.parts[0].text;
-            console.log(response.value); // Log the response
+            // console.log(response.value);
         } else {
             response.value = "No response received.";
         }
@@ -212,11 +227,12 @@ const submitQuestion = async () => {
 
 const handleSatisfaction = async (isSatisfied) => {
     if (isSatisfied) {
-        await saveToFirestore(userQuestion.value, response.value, 5, 1); // Save question and answer with initial rating
-        await fetchFaqRatings(); // Refresh FAQ data
+        await saveToFirestore(userQuestion.value, response.value, 5, 1);
+        // Refresh FAQ data
+        await fetchFaqRatings();
     } else {
-        userQuestion.value = ''; // Clear question
-        response.value = ''; // Clear response
+        userQuestion.value = '';
+        response.value = '';
     }
 };
 
@@ -226,7 +242,7 @@ const saveToFirestore = async (question, answer, avgRating, ratingCount) => {
             question: question,
             answer: answer,
             avgRating: avgRating,
-            totalRatings: avgRating, // assuming totalRatings = avgRating when saving
+            totalRatings: avgRating,
             ratingCount: ratingCount,
         });
         console.log("Question and answer saved to Firestore");
@@ -237,10 +253,10 @@ const saveToFirestore = async (question, answer, avgRating, ratingCount) => {
     }
 };
 
-// Fetch FAQs on component mount
-onMounted(fetchFaqRatings);
+onMounted(() => {
+    fetchFaqRatings();
+});
 </script>
-
 <style scoped>
 .introduction-section {
     margin-top: 20px;
@@ -275,21 +291,30 @@ onMounted(fetchFaqRatings);
     display: flex;
     justify-content: space-between;
     padding: 10px;
-    border: 1px solid #ccc;
+    border: 1px solid #007bff;
     border-radius: 5px;
+    background-color: #f1f1f1;
+    color: #007bff;
+    transition: background-color 0.3s;
+}
+
+.faqs-title:hover {
+    background-color: #007bff;
+    color: white;
 }
 
 .faqs-text {
     padding: 10px;
-    background-color: #f9f9f9;
+    background-color: #ffffff;
     border-radius: 5px;
+    border: 1px solid #e0e0e0;
 }
 
 .rating-section {
     padding: 10px;
     background-color: #f0f8ff;
     border-radius: 5px;
-
+    border: 1px solid #007bff;
 }
 
 .rating-buttons .btn {
@@ -306,6 +331,14 @@ onMounted(fetchFaqRatings);
     width: 100%;
     padding: 10px;
     margin-top: 10px;
+    border: 1px solid #007bff;
+    border-radius: 5px;
+    transition: border-color 0.3s;
+}
+
+.question-input:focus {
+    border-color: #0056b3;
+    outline: none;
 }
 
 .response-section {
@@ -313,5 +346,6 @@ onMounted(fetchFaqRatings);
     background-color: #e0f7fa;
     padding: 10px;
     border-radius: 5px;
+    border: 1px solid #007bff;
 }
 </style>
